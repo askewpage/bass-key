@@ -55,6 +55,7 @@ const trainer = new BassClefTrainer({
   showLabelsToggleEl: document.getElementById("showLabelsToggle"),
   accidentalsToggleEl: document.getElementById("accidentalsToggle"),
   themeToggleEl: document.getElementById("themeToggle"),
+  octaveLabelsToggleEl: document.getElementById("octaveLabelsToggle"),
 });
 
 setupSettingsMenu();

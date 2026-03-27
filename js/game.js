@@ -5,6 +5,7 @@ import { createKeyboard } from "./keyboard.js";
 import { PianoAudio } from "./audio.js";
 
 const THEME_STORAGE_KEY = "bass_clef_theme";
+const OCTAVE_LABELS_STORAGE_KEY = "bass_clef_octave_labels";
 
 const INTERVAL_OPTIONS = [
   { semitones: 0, short: "ч1", label: "Чистая прима" },
@@ -39,6 +40,7 @@ export class BassClefTrainer {
     this.accidentalsToggleEl =
       elements.accidentalsToggleEl || elements.difficultyModeEl || null;
     this.themeToggleEl = elements.themeToggleEl || null;
+    this.octaveLabelsToggleEl = elements.octaveLabelsToggleEl || null;
 
     this.notesSectionEl = elements.notesSectionEl;
     this.intervalSectionEl = elements.intervalSectionEl;
@@ -62,6 +64,7 @@ export class BassClefTrainer {
       showLabels: true,
       includeAccidentals: false,
       darkTheme: false,
+      showOctaveLabels: true,
 
       note: {
         attempts: 0,
@@ -84,6 +87,7 @@ export class BassClefTrainer {
       : true;
     this.state.includeAccidentals = this.readAccidentalsSetting();
     this.state.darkTheme = this.readThemeSetting();
+    this.state.showOctaveLabels = this.readOctaveLabelsSetting();
 
     this.practicePool = buildPracticePoolByAccidentals(this.state.includeAccidentals);
     this.pianoAudio.preload();
@@ -97,6 +101,7 @@ export class BassClefTrainer {
       onPress: (midi) => this.handleNoteGuess(midi),
     });
     this.applyKeyboardLabelVisibility();
+    this.applyOctaveLabelVisibility();
 
     this.createIntervalButtons();
 
@@ -119,7 +124,17 @@ export class BassClefTrainer {
       this.themeToggleEl.addEventListener("change", () => {
         this.state.darkTheme = Boolean(this.themeToggleEl.checked);
         this.applyTheme();
+        this.drawTargetNote();
         this.persistTheme();
+      });
+    }
+
+    if (this.octaveLabelsToggleEl) {
+      this.octaveLabelsToggleEl.checked = this.state.showOctaveLabels;
+      this.octaveLabelsToggleEl.addEventListener("change", () => {
+        this.state.showOctaveLabels = Boolean(this.octaveLabelsToggleEl.checked);
+        this.applyOctaveLabelVisibility();
+        this.persistOctaveLabelsSetting();
       });
     }
 
@@ -192,6 +207,7 @@ export class BassClefTrainer {
       onPress: (midi) => this.handleNoteGuess(midi),
     });
     this.applyKeyboardLabelVisibility();
+    this.applyOctaveLabelVisibility();
     this.centerKeyboardViewport();
   }
 
@@ -218,6 +234,10 @@ export class BassClefTrainer {
     this.keyboardEl.classList.toggle("hide-labels", !this.state.showLabels);
   }
 
+  applyOctaveLabelVisibility() {
+    this.keyboardEl.classList.toggle("hide-octave-markers", !this.state.showOctaveLabels);
+  }
+
   readThemeSetting() {
     try {
       const saved = localStorage.getItem(THEME_STORAGE_KEY);
@@ -234,6 +254,21 @@ export class BassClefTrainer {
   persistTheme() {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, this.state.darkTheme ? "dark" : "light");
+    } catch {}
+  }
+
+  readOctaveLabelsSetting() {
+    try {
+      const saved = localStorage.getItem(OCTAVE_LABELS_STORAGE_KEY);
+      if (saved === "off") return false;
+      if (saved === "on") return true;
+    } catch {}
+    return true;
+  }
+
+  persistOctaveLabelsSetting() {
+    try {
+      localStorage.setItem(OCTAVE_LABELS_STORAGE_KEY, this.state.showOctaveLabels ? "on" : "off");
     } catch {}
   }
 

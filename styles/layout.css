@@ -108,7 +108,7 @@
 
 .keyboard {
   position: relative;
-  height: 230px;
+  height: 264px;
   min-width: 980px;
   user-select: none;
   margin-inline: auto;
@@ -124,6 +124,7 @@
   }
 
   .keyboard {
+    height: 248px;
     min-width: 840px;
   }
 

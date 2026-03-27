@@ -45,6 +45,7 @@
   border: 1px solid #222;
   cursor: pointer;
   padding: 0;
+  top: 0;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -76,6 +77,10 @@
   display: none;
 }
 
+.keyboard.hide-octave-markers .octave-marker {
+  display: none;
+}
+
 .white {
   position: absolute;
   width: 40px;
@@ -94,6 +99,56 @@
   background: linear-gradient(#383838, #101010);
   color: #fafafa;
   z-index: 2;
+}
+
+.octave-marker {
+  position: absolute;
+  top: calc(100% - 34px);
+  height: 30px;
+  pointer-events: none;
+  color: var(--muted);
+}
+
+.octave-brace {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: 0;
+  height: 11px;
+  border-bottom: 1.5px solid var(--line);
+}
+
+.octave-brace::before,
+.octave-brace::after {
+  content: "";
+  position: absolute;
+  bottom: -1.5px;
+  width: 10px;
+  height: 7px;
+  border: 1.5px solid var(--line);
+  border-top: none;
+}
+
+.octave-brace::before {
+  left: -1px;
+  border-right: none;
+  border-bottom-left-radius: 7px;
+}
+
+.octave-brace::after {
+  right: -1px;
+  border-left: none;
+  border-bottom-right-radius: 7px;
+}
+
+.octave-label {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .key.correct {
@@ -307,5 +362,14 @@
   .black {
     width: 22px;
     height: 122px;
+  }
+
+  .octave-marker {
+    top: calc(100% - 32px);
+    height: 28px;
+  }
+
+  .octave-label {
+    font-size: 0.62rem;
   }
 }

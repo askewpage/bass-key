@@ -13,6 +13,7 @@ export function createKeyboard({ root, startMidi, endMidi, onPress }) {
 
   const { whiteWidth, blackWidth } = getKeyboardGeometry();
   const keysByMidi = new Map();
+  const whiteLeftByMidi = new Map();
   let whiteIndex = 0;
 
   for (let midi = startMidi; midi <= endMidi; midi += 1) {
@@ -33,7 +34,9 @@ export function createKeyboard({ root, startMidi, endMidi, onPress }) {
     if (black) {
       key.style.left = `${whiteIndex * whiteWidth - Math.round(blackWidth / 2)}px`;
     } else {
-      key.style.left = `${whiteIndex * whiteWidth}px`;
+      const left = whiteIndex * whiteWidth;
+      key.style.left = `${left}px`;
+      whiteLeftByMidi.set(midi, left);
       whiteIndex += 1;
     }
 
@@ -44,5 +47,48 @@ export function createKeyboard({ root, startMidi, endMidi, onPress }) {
   }
 
   root.style.width = `${whiteIndex * whiteWidth}px`;
+  appendOctaveMarkers({ root, startMidi, endMidi, whiteWidth, whiteLeftByMidi });
   return keysByMidi;
+}
+
+function appendOctaveMarkers({ root, startMidi, endMidi, whiteWidth, whiteLeftByMidi }) {
+  const startOctave = Math.floor(startMidi / 12) - 1;
+  const endOctave = Math.floor(endMidi / 12) - 1;
+
+  for (let octave = startOctave; octave <= endOctave; octave += 1) {
+    const octaveStartMidi = Math.max(startMidi, (octave + 1) * 12);
+    const octaveEndMidi = Math.min(endMidi, (octave + 2) * 12 - 1);
+
+    const firstWhiteMidi = findFirstWhiteMidi(octaveStartMidi, octaveEndMidi);
+    const lastWhiteMidi = findLastWhiteMidi(octaveEndMidi, octaveStartMidi);
+    if (firstWhiteMidi == null || lastWhiteMidi == null) continue;
+
+    const left = whiteLeftByMidi.get(firstWhiteMidi);
+    const rightStart = whiteLeftByMidi.get(lastWhiteMidi);
+    if (left == null || rightStart == null) continue;
+
+    const marker = document.createElement("div");
+    marker.className = "octave-marker";
+    marker.style.left = `${left}px`;
+    marker.style.width = `${rightStart + whiteWidth - left}px`;
+    marker.innerHTML = `
+      <span class="octave-brace" aria-hidden="true"></span>
+      <span class="octave-label">${midiToName(firstWhiteMidi)}–${midiToName(lastWhiteMidi)}</span>
+    `;
+    root.appendChild(marker);
+  }
+}
+
+function findFirstWhiteMidi(startMidi, endMidi) {
+  for (let midi = startMidi; midi <= endMidi; midi += 1) {
+    if (!isBlackKey(midi % 12)) return midi;
+  }
+  return null;
+}
+
+function findLastWhiteMidi(startMidi, endMidi) {
+  for (let midi = startMidi; midi >= endMidi; midi -= 1) {
+    if (!isBlackKey(midi % 12)) return midi;
+  }
+  return null;
 }
