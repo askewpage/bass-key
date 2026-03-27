@@ -146,7 +146,7 @@
 
 .settings-dock {
   position: fixed;
-  top: 12px;
+  bottom: 12px;
   right: 12px;
   z-index: 30;
 }
@@ -154,33 +154,34 @@
 .settings-gear {
   width: 42px;
   height: 42px;
-  border: 1px solid var(--button-border);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--button-bg);
-  color: var(--ink);
+  background: var(--control-bg);
+  color: var(--muted);
   display: grid;
   place-items: center;
   cursor: pointer;
 }
 
 .settings-gear:hover {
-  filter: brightness(0.97);
+  filter: brightness(1.04);
 }
 
 .gear-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   fill: currentColor;
+  opacity: 0.92;
 }
 
 .settings-panel {
   position: absolute;
-  top: 0;
+  bottom: 0;
   right: 0;
   width: 350px;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-4px) scale(0.98);
+  transform: translateY(4px) scale(0.98);
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
@@ -188,7 +189,7 @@
 .settings-dock:focus-within .settings-panel {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(46px) scale(1);
+  transform: translateY(calc(-100% - 10px)) scale(1);
 }
 
 .mode-btn {
@@ -275,7 +276,7 @@
 
 @media (max-width: 700px) {
   .settings-dock {
-    top: 8px;
+    bottom: 8px;
     right: 8px;
   }
 
