@@ -88,6 +88,7 @@ export class BassClefTrainer {
     this.practicePool = buildPracticePoolByAccidentals(this.state.includeAccidentals);
     this.pianoAudio.preload();
     this.applyTheme();
+    this.bindAudioUnlock();
 
     this.keysByMidi = createKeyboard({
       root: this.keyboardEl,
@@ -142,6 +143,16 @@ export class BassClefTrainer {
     this.setMode("notes");
     this.centerKeyboardViewport();
     this.updateFeedbackPosition();
+  }
+
+  bindAudioUnlock() {
+    const unlock = () => {
+      this.pianoAudio.unlock();
+    };
+
+    window.addEventListener("touchstart", unlock, { passive: true, once: true });
+    window.addEventListener("pointerdown", unlock, { passive: true, once: true });
+    window.addEventListener("keydown", unlock, { once: true });
   }
 
   setMode(mode) {

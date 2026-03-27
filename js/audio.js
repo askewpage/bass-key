@@ -8,6 +8,7 @@ export class PianoAudio {
     this.fallbackSynth = null;
     this.readyPromise = null;
     this.nativeAudioCtx = null;
+    this.unlocked = false;
   }
 
   preload() {
@@ -21,8 +22,7 @@ export class PianoAudio {
     const fallbackFreq = midiToFrequency(midi);
 
     try {
-      await this.preload();
-      await this.#startContextIfNeeded();
+      await this.unlock();
 
       const note = this.tone.Frequency(midi, "midi").toNote();
       if (this.sampler?.loaded) {
@@ -39,6 +39,25 @@ export class PianoAudio {
     }
 
     this.#playNativeFallback(fallbackFreq);
+  }
+
+  async unlock() {
+    this.#ensureNativeContext();
+    if (this.nativeAudioCtx && this.nativeAudioCtx.state === "suspended") {
+      await this.nativeAudioCtx.resume();
+    }
+
+    if (!this.unlocked) {
+      this.#tickleNativeContext();
+      this.unlocked = true;
+    }
+
+    try {
+      await this.preload();
+      await this.#startContextIfNeeded();
+    } catch {
+      // Keep native fallback available even when Tone.js is unavailable.
+    }
   }
 
   async playInterval(baseMidi, semitones, options = {}) {
@@ -105,12 +124,8 @@ export class PianoAudio {
   }
 
   #playNativeFallback(freq) {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-
-    if (!this.nativeAudioCtx) {
-      this.nativeAudioCtx = new AudioCtx();
-    }
+    this.#ensureNativeContext();
+    if (!this.nativeAudioCtx) return;
 
     const ctx = this.nativeAudioCtx;
     if (ctx.state === "suspended") {
@@ -145,6 +160,26 @@ export class PianoAudio {
     osc2.start(now);
     osc1.stop(now + 0.45);
     osc2.stop(now + 0.45);
+  }
+
+  #ensureNativeContext() {
+    if (this.nativeAudioCtx) return;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    this.nativeAudioCtx = new AudioCtx();
+  }
+
+  #tickleNativeContext() {
+    if (!this.nativeAudioCtx) return;
+    const ctx = this.nativeAudioCtx;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.00001, now);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.01);
   }
 }
 

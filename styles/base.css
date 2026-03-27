@@ -7,6 +7,5 @@ body {
   min-height: 100vh;
   color: var(--ink);
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-  background: var(--bg);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  background: #f8f8f8;
 }
