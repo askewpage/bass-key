@@ -73,7 +73,7 @@ function appendOctaveMarkers({ root, startMidi, endMidi, whiteWidth, whiteLeftBy
     marker.style.width = `${rightStart + whiteWidth - left}px`;
     marker.innerHTML = `
       <span class="octave-brace" aria-hidden="true"></span>
-      <span class="octave-label">${midiToName(firstWhiteMidi)}–${midiToName(lastWhiteMidi)}</span>
+      <span class="octave-label">${getOctaveName(octave)}</span>
     `;
     root.appendChild(marker);
   }
@@ -91,4 +91,15 @@ function findLastWhiteMidi(startMidi, endMidi) {
     if (!isBlackKey(midi % 12)) return midi;
   }
   return null;
+}
+
+function getOctaveName(octave) {
+  if (octave === 1) return "Контроктава";
+  if (octave === 2) return "Большая";
+  if (octave === 3) return "Малая";
+  if (octave === 4) return "Первая";
+  if (octave === 5) return "Вторая";
+  if (octave === 6) return "Третья";
+  if (octave === 7) return "Четвертая";
+  return `${octave}-я`;
 }

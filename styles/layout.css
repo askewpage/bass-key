@@ -49,8 +49,8 @@
   min-height: 170px;
   display: grid;
   place-items: center;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: #fff;
+  border: 1px solid #d9d9d9;
   border-radius: 10px;
   position: relative;
   padding: 0.2rem 0.35rem 2.9rem;

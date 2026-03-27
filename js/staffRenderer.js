@@ -36,36 +36,23 @@ export function renderBassNoteSvg(targetMidi) {
 
   const linesSvg = Array.from({ length: 5 }, (_, i) => {
     const ly = topLineY + i * lineGap;
-    return `<line x1="${staffX1}" y1="${ly}" x2="${staffX2}" y2="${ly}" stroke="currentColor" stroke-width="1.5" />`;
+    return `<line x1="${staffX1}" y1="${ly}" x2="${staffX2}" y2="${ly}" stroke="#111" stroke-width="1.5" />`;
   }).join("\n");
 
   const ledgerSvg = ledger
     .map(
       (ly) =>
-        `<line x1="${noteX - 22}" y1="${ly}" x2="${noteX + 22}" y2="${ly}" stroke="currentColor" stroke-width="1.4" />`
+        `<line x1="${noteX - 22}" y1="${ly}" x2="${noteX + 22}" y2="${ly}" stroke="#111" stroke-width="1.4" />`
     )
     .join("\n");
 
   return `
-  <svg width="100%" viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="color: var(--ink);">
+  <svg width="100%" viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="0" y="0" width="560" height="200" fill="#fff" />
     ${linesSvg}
     ${ledgerSvg}
-    <path
-      d="M132 ${bassFLineY - 40}
-         C101 ${bassFLineY - 40}, 93 ${bassFLineY + 10}, 124 ${bassFLineY + 10}
-         C142 ${bassFLineY + 10}, 147 ${bassFLineY - 7}, 136 ${bassFLineY - 14}
-         C121 ${bassFLineY - 23}, 108 ${bassFLineY - 10}, 108 ${bassFLineY + 8}
-         C108 ${bassFLineY + 30}, 123 ${bassFLineY + 44}, 142 ${bassFLineY + 44}"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="5"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-    <circle cx="138" cy="${bassFLineY + 4}" r="4.8" fill="currentColor" />
-    <circle cx="165" cy="${bassFLineY - 6}" r="3.2" fill="currentColor" />
-    <circle cx="165" cy="${bassFLineY + 6}" r="3.2" fill="currentColor" />
-    ${accidentalGlyph ? `<text x="248" y="${y + 9}" font-size="32" font-family="'Times New Roman', serif" fill="currentColor">${accidentalGlyph}</text>` : ""}
-    <ellipse cx="${noteX}" cy="${y}" rx="14" ry="9.4" fill="currentColor" transform="rotate(-17 ${noteX} ${y})" />
+    <text x="100" y="${bassFLineY}" font-size="88" font-family="'Times New Roman', serif" fill="#111" dominant-baseline="middle">𝄢</text>
+    ${accidentalGlyph ? `<text x="248" y="${y + 9}" font-size="32" font-family="'Times New Roman', serif" fill="#111">${accidentalGlyph}</text>` : ""}
+    <ellipse cx="${noteX}" cy="${y}" rx="14" ry="9.4" fill="#111" transform="rotate(-17 ${noteX} ${y})" />
   </svg>`;
 }
