@@ -1,0 +1,29 @@
+:root {
+  --bg: #f6f6f6;
+  --panel: #ffffff;
+  --ink: #171717;
+  --muted: #6a6a6a;
+  --accent: #2e6f40;
+  --danger: #a9342f;
+  --line: #e6e6e6;
+  --control-bg: #f8f8f8;
+  --button-bg: #ffffff;
+  --button-border: #d0d0d0;
+  --switch-off: #c8ccd2;
+  --switch-on: #7b8697;
+  --switch-knob: #ffffff;
+}
+
+body.theme-dark {
+  --bg: #101113;
+  --panel: #17191d;
+  --ink: #eceff4;
+  --muted: #a2a9b3;
+  --line: #23262b;
+  --control-bg: #171a1f;
+  --button-bg: #1d2127;
+  --button-border: #2b3139;
+  --switch-off: #4d5560;
+  --switch-on: #7b8697;
+  --switch-knob: #ffffff;
+}

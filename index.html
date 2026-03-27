@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Тренажер басового ключа</title>
+    <link rel="stylesheet" href="styles/main.css?v=18" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="top">
+        <div>
+          <h1></h1>
+        </div>
+      </header>
+
+      <div class="status hidden-ui" aria-live="polite">
+        <div><strong>Попыток:</strong> <span id="attempts">0</span></div>
+        <div><strong>Верно:</strong> <span id="correct">0</span></div>
+        <div><strong>Точность:</strong> <span id="accuracy">0%</span></div>
+      </div>
+
+      <div id="notesSection" class="trainer-section">
+        <div id="noteView" class="note-view" role="img" aria-live="polite"></div>
+        <div id="keyboardWrap" class="keyboard-wrap">
+          <div id="keyboard" class="keyboard" aria-label="Клавиатура из 5 октав"></div>
+        </div>
+      </div>
+
+      <div id="intervalSection" class="trainer-section hidden">
+        <div id="intervalButtons" class="interval-buttons" aria-label="Кнопки интервалов"></div>
+        <div class="interval-replay-wrap">
+          <button id="replayIntervalBtn" class="tiny-btn replay-btn" type="button">↻ Еще раз</button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="settings-dock" aria-label="Настройки">
+      <button class="settings-gear" type="button" aria-label="Открыть настройки">⚙</button>
+      <div class="settings-panel">
+        <div class="controls" aria-label="Настройки тренажера">
+          <label class="control-row" for="showLabelsToggle">
+            <span>Показывать подписи на клавиатуре</span>
+            <input id="showLabelsToggle" type="checkbox" />
+          </label>
+
+          <label class="control-row" for="accidentalsToggle">
+            <span>Разрешить диезы и бемоли</span>
+            <input id="accidentalsToggle" type="checkbox" />
+          </label>
+
+          <label class="control-row" for="themeToggle">
+            <span>Темная тема</span>
+            <input id="themeToggle" type="checkbox" />
+          </label>
+
+          <div class="control-row mode-row" role="tablist" aria-label="Режим тренажера">
+            <span>Режим</span>
+            <div class="mode-inline">
+              <button id="modeNotesBtn" class="mode-btn active" type="button">Ноты</button>
+              <button id="modeIntervalsBtn" class="mode-btn" type="button">Интервалы</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div id="floatingFeedback" class="floating-feedback hidden" aria-live="polite"></div>
+
+    <script type="module" src="js/main.js?v=18"></script>
+  </body>
+</html>
