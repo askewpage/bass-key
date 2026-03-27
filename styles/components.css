@@ -177,7 +177,7 @@
 .settings-panel {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + 6px);
   width: 350px;
   max-height: calc(100vh - 80px);
   max-height: calc(100dvh - 80px);
@@ -191,8 +191,7 @@
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
-.settings-dock:hover .settings-panel,
-.settings-dock:focus-within .settings-panel {
+.settings-dock.is-open .settings-panel {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0) scale(1);
