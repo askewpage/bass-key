@@ -158,8 +158,19 @@
   border-radius: 999px;
   background: var(--button-bg);
   color: var(--ink);
-  font-size: 1.15rem;
+  display: grid;
+  place-items: center;
   cursor: pointer;
+}
+
+.settings-gear:hover {
+  filter: brightness(0.97);
+}
+
+.gear-icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
 }
 
 .settings-panel {
