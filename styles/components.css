@@ -176,12 +176,18 @@
 
 .settings-panel {
   position: absolute;
-  bottom: 0;
   right: 0;
+  bottom: calc(100% + 10px);
   width: 350px;
+  max-height: calc(100vh - 80px);
+  max-height: calc(100dvh - 80px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(4px) scale(0.98);
+  transform: translateY(6px) scale(0.98);
+  transform-origin: bottom right;
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
@@ -189,7 +195,7 @@
 .settings-dock:focus-within .settings-panel {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(calc(-100% - 10px)) scale(1);
+  transform: translateY(0) scale(1);
 }
 
 .mode-btn {
