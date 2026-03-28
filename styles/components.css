@@ -39,21 +39,19 @@
 
 .floating-feedback.split-feedback {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  text-align: left;
-  padding-inline: 0.45rem;
+  text-align: center;
+  gap: 0.65em;
+  padding-inline: 0;
 }
 
 .feedback-wrong {
   color: #cf3e3e;
-  font-weight: 800;
 }
 
 .feedback-correct {
   color: #2f8a4f;
-  font-weight: 800;
-  text-align: right;
 }
 
 .floating-feedback.hidden {
