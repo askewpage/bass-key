@@ -423,7 +423,7 @@ export class BassClefTrainer {
     this.pendingRoundTimer = window.setTimeout(() => {
       this.pickNextNote();
       this.pendingRoundTimer = null;
-    }, 760);
+    }, 1111);
   }
 
   pickNextInterval(playAfterPick = true) {
