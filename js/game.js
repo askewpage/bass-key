@@ -130,9 +130,9 @@ export class BassClefTrainer {
     }
 
     if (this.octaveLabelsToggleEl) {
-      this.octaveLabelsToggleEl.checked = this.state.showOctaveLabels;
+      this.octaveLabelsToggleEl.checked = !this.state.showOctaveLabels;
       this.octaveLabelsToggleEl.addEventListener("change", () => {
-        this.state.showOctaveLabels = Boolean(this.octaveLabelsToggleEl.checked);
+        this.state.showOctaveLabels = !Boolean(this.octaveLabelsToggleEl.checked);
         this.applyOctaveLabelVisibility();
         this.persistOctaveLabelsSetting();
       });
@@ -244,7 +244,7 @@ export class BassClefTrainer {
       if (saved === "dark") return true;
       if (saved === "light") return false;
     } catch {}
-    return false;
+    return true;
   }
 
   applyTheme() {
@@ -312,10 +312,16 @@ export class BassClefTrainer {
     });
   }
 
-  setMessage(text, kind = "") {
+  setMessage(text, kind = "", options = {}) {
     if (!this.messageEl) return;
-    this.messageEl.textContent = text;
+    const { asHtml = false, layout = "" } = options;
+    if (asHtml) {
+      this.messageEl.innerHTML = text;
+    } else {
+      this.messageEl.textContent = text;
+    }
     this.messageEl.classList.remove("ok", "bad");
+    this.messageEl.classList.toggle("split-feedback", layout === "split");
     if (kind) this.messageEl.classList.add(kind);
     this.messageEl.classList.toggle("hidden", !text);
     this.updateFeedbackPosition();
@@ -383,6 +389,7 @@ export class BassClefTrainer {
     this.state.note.attempts += 1;
     const isCorrect = pressedMidi === this.state.note.targetMidi;
     const targetName = midiToName(this.state.note.targetMidi);
+    const pressedName = midiToName(pressedMidi);
 
     const pressedKey = this.keysByMidi.get(pressedMidi);
     if (pressedKey) {
@@ -406,7 +413,11 @@ export class BassClefTrainer {
       targetKey.classList.add("correct");
     }
 
-    this.setMessage(targetName, "bad");
+    this.setMessage(
+      `<span class="feedback-wrong">${pressedName}</span><span class="feedback-correct">${targetName}</span>`,
+      "bad",
+      { asHtml: true, layout: "split" }
+    );
     this.updateStats();
 
     this.pendingRoundTimer = window.setTimeout(() => {

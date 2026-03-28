@@ -19,7 +19,7 @@
   width: min(92%, 760px);
   text-align: center;
   font-family: "Avenir Next", "SF Pro Display", "Segoe UI", sans-serif;
-  font-size: clamp(3rem, 8vw, 6rem);
+  font-size: clamp(3.3rem, 8.8vw, 6.6rem);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: 0.01em;
@@ -35,6 +35,25 @@
 
 .floating-feedback.bad {
   color: #d14d4d;
+}
+
+.floating-feedback.split-feedback {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  padding-inline: 0.45rem;
+}
+
+.feedback-wrong {
+  color: #cf3e3e;
+  font-weight: 800;
+}
+
+.feedback-correct {
+  color: #2f8a4f;
+  font-weight: 800;
+  text-align: right;
 }
 
 .floating-feedback.hidden {
@@ -153,12 +172,16 @@
 
 .key.correct {
   filter: brightness(1.03) saturate(1.2);
-  box-shadow: inset 0 0 0 3px rgba(46, 111, 64, 0.7);
+  box-shadow:
+    inset 0 0 0 5px rgba(46, 111, 64, 0.85),
+    0 0 0 2px rgba(46, 111, 64, 0.38);
 }
 
 .key.wrong {
   filter: brightness(1.05) saturate(1.2);
-  box-shadow: inset 0 0 0 3px rgba(169, 52, 47, 0.75);
+  box-shadow:
+    inset 0 0 0 5px rgba(169, 52, 47, 0.9),
+    0 0 0 2px rgba(169, 52, 47, 0.4);
 }
 
 .controls input[type="checkbox"] {
