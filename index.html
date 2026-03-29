@@ -14,6 +14,12 @@
         </div>
       </header>
 
+      <section class="mode-strip" aria-label="Выбор режима">
+        <button id="modeNotesBtn" class="mode-btn active" type="button">Ноты</button>
+        <button id="modeIntervalsBtn" class="mode-btn" type="button">Интервалы</button>
+        <button id="modeRhythmBtn" class="mode-btn" type="button">Ритм</button>
+      </section>
+
       <div class="status hidden-ui" aria-live="polite">
         <div><strong>Попыток:</strong> <span id="attempts">0</span></div>
         <div><strong>Верно:</strong> <span id="correct">0</span></div>
@@ -43,24 +49,6 @@
           <button id="rhythmStartBtn" class="tiny-btn" type="button">Старт</button>
           <button id="rhythmRegenerateBtn" class="tiny-btn" type="button">Новый ритм</button>
         </div>
-        <div class="rhythm-patterns" aria-label="Выбор длительностей для раунда">
-          <label class="rhythm-pattern-option" for="rhythmQuarterToggle">
-            <input id="rhythmQuarterToggle" data-pattern-id="quarter" type="checkbox" checked />
-            <span>♩</span>
-          </label>
-          <label class="rhythm-pattern-option" for="rhythmEighthsToggle">
-            <input id="rhythmEighthsToggle" data-pattern-id="eighths" type="checkbox" checked />
-            <span>♫</span>
-          </label>
-          <label class="rhythm-pattern-option" for="rhythmSixteenthsToggle">
-            <input id="rhythmSixteenthsToggle" data-pattern-id="sixteenths" type="checkbox" checked />
-            <span>♬</span>
-          </label>
-          <label class="rhythm-pattern-option" for="rhythmTripletToggle">
-            <input id="rhythmTripletToggle" data-pattern-id="triplet" type="checkbox" />
-            <span>♪3</span>
-          </label>
-        </div>
         <p id="rhythmHint" class="rhythm-hint">16 долей, случайные длительности в каждом квадрате.</p>
         <div id="rhythmGrid" class="rhythm-grid" aria-label="Ритмическая сетка из 16 долей"></div>
       </div>
@@ -83,40 +71,72 @@
       </button>
       <div id="settingsPanel" class="settings-panel">
         <div class="controls" aria-label="Настройки тренажера">
-          <label class="control-row" for="showLabelsToggle">
-            <span>Показывать подписи на клавиатуре</span>
-            <input id="showLabelsToggle" type="checkbox" />
-          </label>
+          <div id="notesSettings" class="mode-settings">
+            <div class="settings-title">Ноты</div>
+            <div class="clef-row" role="tablist" aria-label="Ключ">
+              <span>Ключ</span>
+              <div class="mode-inline">
+                <button id="noteClefBassBtn" class="mode-btn active" type="button">𝄢 Бас</button>
+                <button id="noteClefTrebleBtn" class="mode-btn" type="button">𝄞 Скрипка</button>
+              </div>
+            </div>
+            <label class="control-row" for="showLabelsToggle">
+              <span>Подписи клавиш</span>
+              <input id="showLabelsToggle" type="checkbox" />
+            </label>
+            <label class="control-row" for="accidentalsToggle">
+              <span>Диезы и бемоли</span>
+              <input id="accidentalsToggle" type="checkbox" />
+            </label>
+            <label class="control-row" for="octaveLabelsToggle">
+              <span>Скрыть подписи октав</span>
+              <input id="octaveLabelsToggle" type="checkbox" />
+            </label>
+          </div>
 
-          <label class="control-row" for="accidentalsToggle">
-            <span>Разрешить диезы и бемоли</span>
-            <input id="accidentalsToggle" type="checkbox" />
-          </label>
+          <div id="intervalSettings" class="mode-settings hidden">
+            <div class="settings-title">Интервалы</div>
+            <div class="settings-hint">В этом режиме можно только повторно прослушать интервал и выбрать ответ.</div>
+          </div>
 
-          <label class="control-row" for="themeToggle">
-            <span>Темная тема</span>
-            <input id="themeToggle" type="checkbox" />
-          </label>
-
-          <label class="control-row" for="octaveLabelsToggle">
-            <span>Скрыть подписи октав</span>
-            <input id="octaveLabelsToggle" type="checkbox" />
-          </label>
-
-          <div class="control-row mode-row" role="tablist" aria-label="Режим тренажера">
-            <span>Режим</span>
-            <div class="mode-inline">
-              <button id="modeNotesBtn" class="mode-btn active" type="button">Ноты</button>
-              <button id="modeIntervalsBtn" class="mode-btn" type="button">Интервалы</button>
-              <button id="modeRhythmBtn" class="mode-btn" type="button">Ритм</button>
+          <div id="rhythmSettings" class="mode-settings hidden">
+            <div class="settings-title">Ритм</div>
+            <div class="settings-hint">Выбери длительности для генерации.</div>
+            <div class="rhythm-patterns" aria-label="Выбор длительностей для раунда">
+              <label class="rhythm-pattern-option" for="rhythmQuarterToggle">
+                <input id="rhythmQuarterToggle" data-pattern-id="quarter" type="checkbox" checked />
+                <span>♩</span>
+              </label>
+              <label class="rhythm-pattern-option" for="rhythmEighthsToggle">
+                <input id="rhythmEighthsToggle" data-pattern-id="eighths" type="checkbox" checked />
+                <span>♫</span>
+              </label>
+              <label class="rhythm-pattern-option" for="rhythmSixteenthsToggle">
+                <input id="rhythmSixteenthsToggle" data-pattern-id="sixteenths" type="checkbox" checked />
+                <span>♬</span>
+              </label>
+              <label class="rhythm-pattern-option" for="rhythmTripletToggle">
+                <input id="rhythmTripletToggle" data-pattern-id="triplet" type="checkbox" />
+                <span>♪3</span>
+              </label>
             </div>
           </div>
         </div>
       </div>
     </aside>
 
+    <button
+      id="themeIconBtn"
+      class="theme-icon-btn"
+      type="button"
+      aria-label="Переключить тему"
+      title="Тема"
+    >
+      🌙
+    </button>
+
     <div id="floatingFeedback" class="floating-feedback hidden" aria-live="polite"></div>
 
-    <script type="module" src="js/main.js?v=22"></script>
+    <script type="module" src="js/main.js?v=23"></script>
   </body>
 </html>

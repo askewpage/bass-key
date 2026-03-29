@@ -1,11 +1,12 @@
 import { KEYBOARD_START_MIDI, KEYBOARD_END_MIDI } from "./constants.js";
 import { buildPracticePoolByAccidentals, midiToName, pickRandomMidi } from "./music.js";
-import { renderBassNoteSvg } from "./staffRenderer.js";
+import { renderNoteSvg } from "./staffRenderer.js";
 import { createKeyboard } from "./keyboard.js";
 import { PianoAudio } from "./audio.js";
 
 const THEME_STORAGE_KEY = "bass_clef_theme";
 const OCTAVE_LABELS_STORAGE_KEY = "bass_clef_octave_labels";
+const NOTE_CLEF_STORAGE_KEY = "note_mode_clef";
 
 const INTERVAL_OPTIONS = [
   { semitones: 0, short: "ч1", label: "Чистая прима" },
@@ -40,6 +41,9 @@ const RHYTHM_PATTERNS = [
   { id: "sixteenths", label: "Шестнадцатые", icon: "♬", offsets: [0, 0.25, 0.5, 0.75] },
 ];
 
+const TREBLE_PRACTICE_MIN_MIDI = 55; // G3
+const TREBLE_PRACTICE_MAX_MIDI = 88; // E6
+
 export class BassClefTrainer {
   constructor(elements) {
     this.appEl = elements.appEl;
@@ -53,12 +57,15 @@ export class BassClefTrainer {
     this.showLabelsToggleEl = elements.showLabelsToggleEl;
     this.accidentalsToggleEl =
       elements.accidentalsToggleEl || elements.difficultyModeEl || null;
-    this.themeToggleEl = elements.themeToggleEl || null;
+    this.themeIconBtnEl = elements.themeIconBtnEl || null;
     this.octaveLabelsToggleEl = elements.octaveLabelsToggleEl || null;
 
     this.notesSectionEl = elements.notesSectionEl;
     this.intervalSectionEl = elements.intervalSectionEl;
     this.rhythmSectionEl = elements.rhythmSectionEl;
+    this.notesSettingsEl = elements.notesSettingsEl || null;
+    this.intervalSettingsEl = elements.intervalSettingsEl || null;
+    this.rhythmSettingsEl = elements.rhythmSettingsEl || null;
     this.modeNotesBtnEl = elements.modeNotesBtnEl;
     this.modeIntervalsBtnEl = elements.modeIntervalsBtnEl;
     this.modeRhythmBtnEl = elements.modeRhythmBtnEl;
@@ -73,8 +80,13 @@ export class BassClefTrainer {
     this.rhythmBpmInputEl = elements.rhythmBpmInputEl || null;
     this.rhythmPatternToggleEls = Array.from(elements.rhythmPatternToggleEls || []);
     this.rhythmHintEl = elements.rhythmHintEl || null;
+    this.noteClefBassBtnEl = elements.noteClefBassBtnEl || null;
+    this.noteClefTrebleBtnEl = elements.noteClefTrebleBtnEl || null;
 
-    this.practicePool = [];
+    this.practicePools = {
+      bass: [],
+      treble: [],
+    };
     this.keysByMidi = new Map();
     this.intervalButtonsBySemitone = new Map();
     this.rhythmCells = [];
@@ -94,6 +106,7 @@ export class BassClefTrainer {
       note: {
         attempts: 0,
         correct: 0,
+        clef: "bass",
         targetMidi: null,
       },
 
@@ -125,10 +138,12 @@ export class BassClefTrainer {
     this.state.includeAccidentals = this.readAccidentalsSetting();
     this.state.darkTheme = this.readThemeSetting();
     this.state.showOctaveLabels = this.readOctaveLabelsSetting();
+    this.state.note.clef = this.readNoteClefSetting();
 
-    this.practicePool = buildPracticePoolByAccidentals(this.state.includeAccidentals);
+    this.practicePools = this.buildAllPracticePools(this.state.includeAccidentals);
     this.pianoAudio.preload();
     this.applyTheme();
+    this.updateThemeIcon();
     this.bindAudioUnlock();
 
     this.keysByMidi = createKeyboard({
@@ -143,6 +158,7 @@ export class BassClefTrainer {
     this.createIntervalButtons();
     this.createRhythmGrid();
     this.bindRhythmControls();
+    this.updateClefButtons();
 
     if (this.showLabelsToggleEl) {
       this.showLabelsToggleEl.addEventListener("change", () => {
@@ -158,12 +174,14 @@ export class BassClefTrainer {
       });
     }
 
-    if (this.themeToggleEl) {
-      this.themeToggleEl.checked = this.state.darkTheme;
-      this.themeToggleEl.addEventListener("change", () => {
-        this.state.darkTheme = Boolean(this.themeToggleEl.checked);
+    if (this.themeIconBtnEl) {
+      this.themeIconBtnEl.addEventListener("click", () => {
+        this.state.darkTheme = !this.state.darkTheme;
         this.applyTheme();
-        this.drawTargetNote();
+        if (this.state.note.targetMidi != null) {
+          this.drawTargetNote();
+        }
+        this.updateThemeIcon();
         this.persistTheme();
       });
     }
@@ -185,6 +203,12 @@ export class BassClefTrainer {
     }
     if (this.modeRhythmBtnEl) {
       this.modeRhythmBtnEl.addEventListener("click", () => this.setMode("rhythm"));
+    }
+    if (this.noteClefBassBtnEl) {
+      this.noteClefBassBtnEl.addEventListener("click", () => this.setNoteClef("bass"));
+    }
+    if (this.noteClefTrebleBtnEl) {
+      this.noteClefTrebleBtnEl.addEventListener("click", () => this.setNoteClef("treble"));
     }
 
     if (this.replayIntervalBtnEl) {
@@ -299,6 +323,7 @@ export class BassClefTrainer {
     this.notesSectionEl.classList.toggle("hidden", !notesMode);
     this.intervalSectionEl.classList.toggle("hidden", !intervalMode);
     this.rhythmSectionEl.classList.toggle("hidden", !rhythmMode);
+    this.updateSettingsPanelsVisibility();
     this.modeNotesBtnEl.classList.toggle("active", notesMode);
     this.modeIntervalsBtnEl.classList.toggle("active", intervalMode);
     this.modeRhythmBtnEl.classList.toggle("active", rhythmMode);
@@ -695,6 +720,15 @@ export class BassClefTrainer {
     document.body.classList.toggle("theme-dark", this.state.darkTheme);
   }
 
+  updateThemeIcon() {
+    if (!this.themeIconBtnEl) return;
+    this.themeIconBtnEl.textContent = this.state.darkTheme ? "☀" : "🌙";
+    this.themeIconBtnEl.setAttribute(
+      "aria-label",
+      this.state.darkTheme ? "Переключить на светлую тему" : "Переключить на темную тему"
+    );
+  }
+
   persistTheme() {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, this.state.darkTheme ? "dark" : "light");
@@ -716,6 +750,55 @@ export class BassClefTrainer {
     } catch {}
   }
 
+  readNoteClefSetting() {
+    try {
+      const saved = localStorage.getItem(NOTE_CLEF_STORAGE_KEY);
+      if (saved === "treble") return "treble";
+    } catch {}
+    return "bass";
+  }
+
+  persistNoteClefSetting() {
+    try {
+      localStorage.setItem(NOTE_CLEF_STORAGE_KEY, this.state.note.clef);
+    } catch {}
+  }
+
+  setNoteClef(clef) {
+    if (clef !== "bass" && clef !== "treble") return;
+    if (this.state.note.clef === clef) return;
+    this.state.note.clef = clef;
+    this.persistNoteClefSetting();
+    this.updateClefButtons();
+
+    if (this.state.mode === "notes") {
+      this.pickNextNote();
+    }
+  }
+
+  updateClefButtons() {
+    if (this.noteClefBassBtnEl) {
+      this.noteClefBassBtnEl.classList.toggle("active", this.state.note.clef === "bass");
+    }
+    if (this.noteClefTrebleBtnEl) {
+      this.noteClefTrebleBtnEl.classList.toggle("active", this.state.note.clef === "treble");
+    }
+  }
+
+  updateSettingsPanelsVisibility() {
+    const mode = this.state.mode;
+    if (this.notesSettingsEl) this.notesSettingsEl.classList.toggle("hidden", mode !== "notes");
+    if (this.intervalSettingsEl) this.intervalSettingsEl.classList.toggle("hidden", mode !== "intervals");
+    if (this.rhythmSettingsEl) this.rhythmSettingsEl.classList.toggle("hidden", mode !== "rhythm");
+  }
+
+  buildAllPracticePools(includeAccidentals) {
+    return {
+      bass: buildPracticePoolByAccidentals(includeAccidentals),
+      treble: buildTreblePracticePool(includeAccidentals),
+    };
+  }
+
   readAccidentalsSetting() {
     if (!this.accidentalsToggleEl) return false;
     if ("checked" in this.accidentalsToggleEl) {
@@ -729,7 +812,7 @@ export class BassClefTrainer {
 
   applyPracticeFilterImmediately() {
     this.clearPendingRoundTransition();
-    this.practicePool = buildPracticePoolByAccidentals(this.state.includeAccidentals);
+    this.practicePools = this.buildAllPracticePools(this.state.includeAccidentals);
 
     if (this.state.mode === "notes") {
       this.pickNextNote();

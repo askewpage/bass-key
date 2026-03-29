@@ -80,30 +80,42 @@ export class PianoAudio {
 
     const ctx = this.nativeAudioCtx;
     const now = ctx.currentTime;
-    const freq = accent ? 1880 : 1320;
-    const gainPeak = accent ? 0.23 : 0.16;
-    const duration = accent ? 0.055 : 0.045;
+    const duration = accent ? 0.068 : 0.052;
+    const gainPeak = accent ? 0.18 : 0.12;
 
-    const osc = ctx.createOscillator();
+    const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * duration));
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const channel = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i += 1) {
+      const t = i / bufferSize;
+      const decay = 1 - t;
+      channel[i] = (Math.random() * 2 - 1) * decay;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = noiseBuffer;
+
+    const bandpass = ctx.createBiquadFilter();
+    bandpass.type = "bandpass";
+    bandpass.frequency.setValueAtTime(accent ? 1800 : 1550, now);
+    bandpass.Q.setValueAtTime(0.75, now);
+
+    const highpass = ctx.createBiquadFilter();
+    highpass.type = "highpass";
+    highpass.frequency.setValueAtTime(1000, now);
+
     const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-
-    osc.type = "square";
-    osc.frequency.setValueAtTime(freq, now);
-
-    filter.type = "highpass";
-    filter.frequency.setValueAtTime(900, now);
-
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(gainPeak, now + 0.002);
+    gain.gain.exponentialRampToValueAtTime(gainPeak, now + 0.003);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
-    osc.connect(filter);
-    filter.connect(gain);
+    noise.connect(bandpass);
+    bandpass.connect(highpass);
+    highpass.connect(gain);
     gain.connect(ctx.destination);
 
-    osc.start(now);
-    osc.stop(now + duration + 0.01);
+    noise.start(now);
+    noise.stop(now + duration + 0.01);
   }
 
   async #init() {

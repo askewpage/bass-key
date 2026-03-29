@@ -44,6 +44,9 @@ const trainer = new BassClefTrainer({
   notesSectionEl: document.getElementById("notesSection"),
   intervalSectionEl: document.getElementById("intervalSection"),
   rhythmSectionEl: document.getElementById("rhythmSection"),
+  notesSettingsEl: document.getElementById("notesSettings"),
+  intervalSettingsEl: document.getElementById("intervalSettings"),
+  rhythmSettingsEl: document.getElementById("rhythmSettings"),
   modeNotesBtnEl: document.getElementById("modeNotesBtn"),
   modeIntervalsBtnEl: document.getElementById("modeIntervalsBtn"),
   modeRhythmBtnEl: document.getElementById("modeRhythmBtn"),
@@ -60,9 +63,11 @@ const trainer = new BassClefTrainer({
   rhythmBpmInputEl: document.getElementById("rhythmBpmInput"),
   rhythmPatternToggleEls: document.querySelectorAll("[data-pattern-id]"),
   rhythmHintEl: document.getElementById("rhythmHint"),
+  noteClefBassBtnEl: document.getElementById("noteClefBassBtn"),
+  noteClefTrebleBtnEl: document.getElementById("noteClefTrebleBtn"),
   showLabelsToggleEl: document.getElementById("showLabelsToggle"),
   accidentalsToggleEl: document.getElementById("accidentalsToggle"),
-  themeToggleEl: document.getElementById("themeToggle"),
+  themeIconBtnEl: document.getElementById("themeIconBtn"),
   octaveLabelsToggleEl: document.getElementById("octaveLabelsToggle"),
 });
 

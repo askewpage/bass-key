@@ -41,6 +41,14 @@ export function staffYForNote(letter, octave) {
   return bottomLineY - (noteIndex - bassBottomLineIndex) * step;
 }
 
+export function staffYForNoteInClef(letter, octave, clef = "bass") {
+  const bottomLineY = 136;
+  const step = 8;
+  const clefBottomLineIndex = clef === "treble" ? diatonicIndex("E", 4) : diatonicIndex("G", 2);
+  const noteIndex = diatonicIndex(letter, octave);
+  return bottomLineY - (noteIndex - clefBottomLineIndex) * step;
+}
+
 export function buildPracticePool() {
   const result = [];
   for (let midi = PRACTICE_MIN_MIDI; midi <= PRACTICE_MAX_MIDI; midi += 1) {
