@@ -71,7 +71,8 @@
 }
 
 #notesSection,
-#intervalSection {
+#intervalSection,
+#rhythmSection {
   max-width: 1460px;
   margin-inline: auto;
 }
@@ -99,6 +100,37 @@
   margin-top: 0.7rem;
 }
 
+.rhythm-toolbar {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.rhythm-bpm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.rhythm-hint {
+  margin: 0.55rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.rhythm-grid {
+  margin-top: 0.55rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 0.6rem;
+}
+
 .keyboard-wrap {
   margin-top: 0.55rem;
   overflow-x: auto;
@@ -121,6 +153,11 @@
 
   .interval-buttons {
     grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+
+  .rhythm-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 0.46rem;
   }
 
   .keyboard {

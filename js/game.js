@@ -26,6 +26,20 @@ const INTERVAL_OPTIONS = [
 const INTERVAL_BASE_MIN = 48; // C3
 const INTERVAL_BASE_MAX = 79; // G5
 
+const RHYTHM_TOTAL_BEATS = 16;
+const RHYTHM_DEFAULT_BPM = 92;
+const RHYTHM_MIN_BPM = 40;
+const RHYTHM_MAX_BPM = 220;
+const RHYTHM_START_LEAD_IN_MS = 500;
+const RHYTHM_HIT_TOLERANCE_MS = 130;
+
+const RHYTHM_PATTERNS = [
+  { id: "quarter", label: "1/4", offsets: [0] },
+  { id: "eighths", label: "1/8+1/8", offsets: [0, 0.5] },
+  { id: "triplet", label: "триоль", offsets: [0, 1 / 3, 2 / 3] },
+  { id: "sixteenths", label: "1/16x4", offsets: [0, 0.25, 0.5, 0.75] },
+];
+
 export class BassClefTrainer {
   constructor(elements) {
     this.appEl = elements.appEl;
@@ -44,20 +58,30 @@ export class BassClefTrainer {
 
     this.notesSectionEl = elements.notesSectionEl;
     this.intervalSectionEl = elements.intervalSectionEl;
+    this.rhythmSectionEl = elements.rhythmSectionEl;
     this.modeNotesBtnEl = elements.modeNotesBtnEl;
     this.modeIntervalsBtnEl = elements.modeIntervalsBtnEl;
+    this.modeRhythmBtnEl = elements.modeRhythmBtnEl;
 
     this.intervalMessageEl = elements.intervalMessageEl;
     this.replayIntervalBtnEl = elements.replayIntervalBtnEl;
     this.intervalButtonsEl = elements.intervalButtonsEl;
 
+    this.rhythmGridEl = elements.rhythmGridEl || null;
+    this.rhythmStartBtnEl = elements.rhythmStartBtnEl || null;
+    this.rhythmRegenerateBtnEl = elements.rhythmRegenerateBtnEl || null;
+    this.rhythmBpmInputEl = elements.rhythmBpmInputEl || null;
+    this.rhythmHintEl = elements.rhythmHintEl || null;
+
     this.practicePool = [];
     this.keysByMidi = new Map();
     this.intervalButtonsBySemitone = new Map();
+    this.rhythmCells = [];
 
     this.pianoAudio = new PianoAudio();
     this.pendingRoundTimer = null;
     this.intervalPlayToken = 0;
+    this.rhythmRafId = null;
 
     this.state = {
       mode: "notes",
@@ -77,6 +101,17 @@ export class BassClefTrainer {
         correct: 0,
         targetSemitones: null,
         baseMidi: null,
+      },
+
+      rhythm: {
+        attempts: 0,
+        correct: 0,
+        bpm: RHYTHM_DEFAULT_BPM,
+        sequence: [],
+        expectedHits: [],
+        running: false,
+        startTime: 0,
+        currentBeat: -1,
       },
     };
   }
@@ -104,6 +139,8 @@ export class BassClefTrainer {
     this.applyOctaveLabelVisibility();
 
     this.createIntervalButtons();
+    this.createRhythmGrid();
+    this.bindRhythmControls();
 
     if (this.showLabelsToggleEl) {
       this.showLabelsToggleEl.addEventListener("change", () => {
@@ -144,17 +181,22 @@ export class BassClefTrainer {
     if (this.modeIntervalsBtnEl) {
       this.modeIntervalsBtnEl.addEventListener("click", () => this.setMode("intervals"));
     }
+    if (this.modeRhythmBtnEl) {
+      this.modeRhythmBtnEl.addEventListener("click", () => this.setMode("rhythm"));
+    }
 
     if (this.replayIntervalBtnEl) {
       this.replayIntervalBtnEl.addEventListener("click", () => this.replayInterval());
     }
 
+    window.addEventListener("keydown", (event) => this.handleRhythmKeydown(event));
     window.addEventListener("resize", () => this.rebuildKeyboard());
     window.addEventListener("resize", () => this.updateFeedbackPosition());
     window.addEventListener("scroll", () => this.updateFeedbackPosition(), { passive: true });
 
     this.pickNextNote();
     this.pickNextInterval(false);
+    this.generateRhythmRound();
     this.setMode("notes");
     this.centerKeyboardViewport();
     this.updateFeedbackPosition();
@@ -170,16 +212,60 @@ export class BassClefTrainer {
     window.addEventListener("keydown", unlock, { once: true });
   }
 
+  bindRhythmControls() {
+    if (this.rhythmBpmInputEl) {
+      this.rhythmBpmInputEl.value = String(this.state.rhythm.bpm);
+      this.rhythmBpmInputEl.addEventListener("change", () => {
+        const next = clampNumber(this.rhythmBpmInputEl.value, RHYTHM_MIN_BPM, RHYTHM_MAX_BPM);
+        this.state.rhythm.bpm = next;
+        this.rhythmBpmInputEl.value = String(next);
+        this.updateRhythmHint();
+      });
+    }
+
+    if (this.rhythmStartBtnEl) {
+      this.rhythmStartBtnEl.addEventListener("click", () => {
+        this.startRhythmRound();
+      });
+    }
+
+    if (this.rhythmRegenerateBtnEl) {
+      this.rhythmRegenerateBtnEl.addEventListener("click", () => {
+        this.generateRhythmRound();
+      });
+    }
+
+    if (this.rhythmSectionEl) {
+      this.rhythmSectionEl.addEventListener("pointerdown", (event) => {
+        if (!(event.target instanceof HTMLElement)) return;
+        const interactive = event.target.closest("button, input, label");
+        if (interactive) return;
+        this.handleRhythmInput();
+      });
+    }
+  }
+
   setMode(mode) {
-    if (mode !== "notes" && mode !== "intervals") return;
+    if (mode !== "notes" && mode !== "intervals" && mode !== "rhythm") return;
+
+    const previousMode = this.state.mode;
     this.clearPendingRoundTransition();
     this.state.mode = mode;
 
+    if (previousMode === "rhythm" && mode !== "rhythm") {
+      this.stopRhythmRound();
+    }
+
     const notesMode = mode === "notes";
+    const intervalMode = mode === "intervals";
+    const rhythmMode = mode === "rhythm";
+
     this.notesSectionEl.classList.toggle("hidden", !notesMode);
-    this.intervalSectionEl.classList.toggle("hidden", notesMode);
+    this.intervalSectionEl.classList.toggle("hidden", !intervalMode);
+    this.rhythmSectionEl.classList.toggle("hidden", !rhythmMode);
     this.modeNotesBtnEl.classList.toggle("active", notesMode);
-    this.modeIntervalsBtnEl.classList.toggle("active", !notesMode);
+    this.modeIntervalsBtnEl.classList.toggle("active", intervalMode);
+    this.modeRhythmBtnEl.classList.toggle("active", rhythmMode);
 
     if (notesMode) {
       if (this.state.note.targetMidi == null) {
@@ -187,12 +273,18 @@ export class BassClefTrainer {
       }
       this.setMessage("", "");
       this.centerKeyboardViewport();
-    } else {
+    } else if (intervalMode) {
       if (this.state.interval.targetSemitones == null) {
         this.pickNextInterval(true);
       }
       this.setIntervalMessage("", "");
       this.replayInterval();
+    } else {
+      if (!this.state.rhythm.sequence.length) {
+        this.generateRhythmRound();
+      }
+      this.setMessage("", "");
+      this.updateRhythmHint();
     }
 
     this.updateStats();
@@ -228,6 +320,319 @@ export class BassClefTrainer {
       this.intervalButtonsEl.appendChild(button);
       this.intervalButtonsBySemitone.set(interval.semitones, button);
     });
+  }
+
+  createRhythmGrid() {
+    if (!this.rhythmGridEl) return;
+
+    this.rhythmGridEl.innerHTML = "";
+    this.rhythmCells = [];
+
+    for (let beat = 0; beat < RHYTHM_TOTAL_BEATS; beat += 1) {
+      const cell = document.createElement("div");
+      cell.className = "rhythm-cell";
+
+      const indexEl = document.createElement("div");
+      indexEl.className = "rhythm-cell-index";
+      indexEl.textContent = String(beat + 1);
+
+      const bodyEl = document.createElement("div");
+      bodyEl.className = "rhythm-cell-body";
+      bodyEl.textContent = "1/4";
+
+      const hitsEl = document.createElement("div");
+      hitsEl.className = "rhythm-cell-hits";
+
+      cell.appendChild(indexEl);
+      cell.appendChild(bodyEl);
+      cell.appendChild(hitsEl);
+      this.rhythmGridEl.appendChild(cell);
+
+      this.rhythmCells.push({
+        root: cell,
+        bodyEl,
+        hitsEl,
+        dots: [],
+      });
+    }
+  }
+
+  renderRhythmGrid() {
+    this.state.rhythm.sequence.forEach((pattern, beatIndex) => {
+      const cell = this.rhythmCells[beatIndex];
+      if (!cell) return;
+
+      cell.root.classList.remove("is-active", "is-good", "is-bad");
+      cell.bodyEl.textContent = pattern.label;
+      cell.hitsEl.innerHTML = "";
+      cell.dots = [];
+
+      pattern.offsets.forEach(() => {
+        const dot = document.createElement("span");
+        dot.className = "rhythm-hit-dot";
+        cell.hitsEl.appendChild(dot);
+        cell.dots.push(dot);
+      });
+    });
+  }
+
+  generateRhythmRound() {
+    this.stopRhythmRound();
+
+    const sequence = [];
+    let previous = null;
+
+    for (let beat = 0; beat < RHYTHM_TOTAL_BEATS; beat += 1) {
+      const pattern = pickRandomRhythmPattern(previous);
+      sequence.push(pattern);
+      previous = pattern.id;
+    }
+
+    this.state.rhythm.sequence = sequence;
+    this.state.rhythm.expectedHits = sequence.flatMap((pattern, beatIndex) =>
+      pattern.offsets.map((offset, hitIndex) => ({
+        beatIndex,
+        hitIndex,
+        offset,
+        time: 0,
+        matched: false,
+        missed: false,
+      }))
+    );
+
+    this.renderRhythmGrid();
+    this.updateRhythmHint();
+
+    if (this.state.mode === "rhythm") {
+      this.updateStats();
+    }
+  }
+
+  startRhythmRound() {
+    if (!this.state.rhythm.sequence.length) {
+      this.generateRhythmRound();
+    }
+
+    this.stopRhythmRound();
+
+    const beatMs = this.getBeatDurationMs();
+    const startTime = performance.now() + RHYTHM_START_LEAD_IN_MS;
+
+    this.state.rhythm.startTime = startTime;
+    this.state.rhythm.currentBeat = -1;
+    this.state.rhythm.running = true;
+
+    this.state.rhythm.expectedHits.forEach((hit) => {
+      hit.time = startTime + (hit.beatIndex + hit.offset) * beatMs;
+      hit.matched = false;
+      hit.missed = false;
+
+      const dot = this.getRhythmDot(hit.beatIndex, hit.hitIndex);
+      if (dot) {
+        dot.classList.remove("is-hit", "is-miss");
+      }
+    });
+
+    this.rhythmCells.forEach((cell) => {
+      cell.root.classList.remove("is-active", "is-good", "is-bad", "is-off");
+    });
+
+    this.updateRhythmHint("Раунд запущен. Жми Space или кликай в такт.");
+    this.updateStats();
+    this.runRhythmFrame();
+  }
+
+  stopRhythmRound() {
+    if (this.rhythmRafId !== null) {
+      window.cancelAnimationFrame(this.rhythmRafId);
+      this.rhythmRafId = null;
+    }
+
+    this.state.rhythm.running = false;
+    this.state.rhythm.currentBeat = -1;
+
+    this.rhythmCells.forEach((cell) => {
+      cell.root.classList.remove("is-active");
+    });
+
+    if (this.rhythmStartBtnEl) {
+      this.rhythmStartBtnEl.textContent = "Старт";
+    }
+  }
+
+  runRhythmFrame() {
+    if (!this.state.rhythm.running) return;
+
+    const now = performance.now();
+    const elapsed = now - this.state.rhythm.startTime;
+    const beatMs = this.getBeatDurationMs();
+
+    if (elapsed >= 0) {
+      const beatIndex = Math.floor(elapsed / beatMs);
+      if (beatIndex !== this.state.rhythm.currentBeat) {
+        const previousBeat = this.state.rhythm.currentBeat;
+        this.state.rhythm.currentBeat = beatIndex;
+
+        if (beatIndex >= 0 && beatIndex < RHYTHM_TOTAL_BEATS) {
+          this.rhythmCells.forEach((cell, index) => {
+            cell.root.classList.toggle("is-active", index === beatIndex);
+          });
+        }
+
+        for (let pulse = previousBeat + 1; pulse <= beatIndex; pulse += 1) {
+          if (pulse >= 0 && pulse < RHYTHM_TOTAL_BEATS) {
+            this.playRhythmPulse(pulse);
+          }
+        }
+      }
+    }
+
+    this.markRhythmMisses(now);
+
+    const finishedByBeats = elapsed >= beatMs * RHYTHM_TOTAL_BEATS;
+    const finishedByEvents = this.state.rhythm.expectedHits.every((hit) => hit.matched || hit.missed);
+
+    if (finishedByBeats && finishedByEvents) {
+      this.finishRhythmRound();
+      return;
+    }
+
+    this.rhythmRafId = window.requestAnimationFrame(() => this.runRhythmFrame());
+  }
+
+  finishRhythmRound() {
+    this.stopRhythmRound();
+
+    const totalExpected = this.state.rhythm.expectedHits.length;
+    const matched = this.state.rhythm.expectedHits.filter((hit) => hit.matched).length;
+
+    this.updateRhythmHint(`Готово: ${matched}/${totalExpected} попаданий. Можно повторить или сделать новый ритм.`);
+    if (this.state.mode === "rhythm") {
+      this.updateStats();
+    }
+  }
+
+  handleRhythmKeydown(event) {
+    if (this.state.mode !== "rhythm") return;
+    if (event.code !== "Space") return;
+
+    event.preventDefault();
+    this.handleRhythmInput();
+  }
+
+  handleRhythmInput() {
+    if (this.state.mode !== "rhythm") return;
+    if (!this.state.rhythm.running) return;
+
+    const now = performance.now();
+    this.state.rhythm.attempts += 1;
+
+    const nearest = this.findNearestExpectedHit(now);
+    if (!nearest) {
+      const activeBeat = this.state.rhythm.currentBeat;
+      if (activeBeat >= 0 && activeBeat < RHYTHM_TOTAL_BEATS) {
+        const cell = this.rhythmCells[activeBeat];
+        if (cell) {
+          cell.root.classList.add("is-off");
+          window.setTimeout(() => {
+            cell.root.classList.remove("is-off");
+          }, 140);
+        }
+      }
+
+      this.updateStats();
+      return;
+    }
+
+    nearest.matched = true;
+    this.state.rhythm.correct += 1;
+
+    const dot = this.getRhythmDot(nearest.beatIndex, nearest.hitIndex);
+    if (dot) {
+      dot.classList.add("is-hit");
+    }
+
+    this.refreshRhythmCellResult(nearest.beatIndex);
+    this.updateStats();
+  }
+
+  findNearestExpectedHit(now) {
+    let nearest = null;
+    let nearestDistance = Infinity;
+
+    this.state.rhythm.expectedHits.forEach((hit) => {
+      if (hit.matched || hit.missed) return;
+      const distance = Math.abs(now - hit.time);
+      if (distance > RHYTHM_HIT_TOLERANCE_MS) return;
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = hit;
+      }
+    });
+
+    return nearest;
+  }
+
+  markRhythmMisses(now) {
+    this.state.rhythm.expectedHits.forEach((hit) => {
+      if (hit.matched || hit.missed) return;
+      if (now <= hit.time + RHYTHM_HIT_TOLERANCE_MS) return;
+
+      hit.missed = true;
+      this.state.rhythm.attempts += 1;
+
+      const dot = this.getRhythmDot(hit.beatIndex, hit.hitIndex);
+      if (dot) {
+        dot.classList.add("is-miss");
+      }
+
+      this.refreshRhythmCellResult(hit.beatIndex);
+    });
+
+    if (this.state.mode === "rhythm") {
+      this.updateStats();
+    }
+  }
+
+  refreshRhythmCellResult(beatIndex) {
+    const cell = this.rhythmCells[beatIndex];
+    if (!cell) return;
+
+    const total = cell.dots.length;
+    const hitCount = cell.dots.filter((dot) => dot.classList.contains("is-hit")).length;
+    const missCount = cell.dots.filter((dot) => dot.classList.contains("is-miss")).length;
+
+    const resolved = hitCount + missCount;
+    if (resolved < total) return;
+
+    cell.root.classList.remove("is-good", "is-bad");
+    cell.root.classList.add(missCount === 0 ? "is-good" : "is-bad");
+  }
+
+  getRhythmDot(beatIndex, hitIndex) {
+    const cell = this.rhythmCells[beatIndex];
+    if (!cell) return null;
+    return cell.dots[hitIndex] || null;
+  }
+
+  playRhythmPulse(beatIndex) {
+    const pulseMidi = beatIndex % 4 === 0 ? 65 : 53;
+    this.pianoAudio.playMidi(pulseMidi);
+  }
+
+  getBeatDurationMs() {
+    return 60000 / this.state.rhythm.bpm;
+  }
+
+  updateRhythmHint(message = "") {
+    if (!this.rhythmHintEl) return;
+
+    if (message) {
+      this.rhythmHintEl.textContent = message;
+      return;
+    }
+
+    this.rhythmHintEl.textContent = `BPM: ${this.state.rhythm.bpm}. 16 долей, случайные длительности в каждом квадрате.`;
   }
 
   applyKeyboardLabelVisibility() {
@@ -360,7 +765,10 @@ export class BassClefTrainer {
   }
 
   updateStats() {
-    const stats = this.state.mode === "notes" ? this.state.note : this.state.interval;
+    let stats = this.state.note;
+    if (this.state.mode === "intervals") stats = this.state.interval;
+    if (this.state.mode === "rhythm") stats = this.state.rhythm;
+
     this.attemptsEl.textContent = String(stats.attempts);
     this.correctEl.textContent = String(stats.correct);
     const accuracy = stats.attempts ? Math.round((stats.correct / stats.attempts) * 100) : 0;
@@ -514,6 +922,18 @@ function pickRandomInterval(previousSemitones = null) {
   return candidate;
 }
 
+function pickRandomRhythmPattern(previousPatternId = null) {
+  if (RHYTHM_PATTERNS.length === 1) {
+    return RHYTHM_PATTERNS[0];
+  }
+
+  let candidate = RHYTHM_PATTERNS[Math.floor(Math.random() * RHYTHM_PATTERNS.length)];
+  while (candidate.id === previousPatternId) {
+    candidate = RHYTHM_PATTERNS[Math.floor(Math.random() * RHYTHM_PATTERNS.length)];
+  }
+  return candidate;
+}
+
 function intervalBySemitones(semitones) {
   return INTERVAL_OPTIONS.find((item) => item.semitones === semitones) || INTERVAL_OPTIONS[0];
 }
@@ -539,4 +959,12 @@ function toColumnReadingOrder(items, columns) {
   }
 
   return result;
+}
+
+function clampNumber(value, min, max) {
+  const num = Number.parseInt(value, 10);
+  if (!Number.isFinite(num)) return min;
+  if (num < min) return min;
+  if (num > max) return max;
+  return num;
 }

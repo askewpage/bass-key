@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Тренажер басового ключа</title>
-    <link rel="stylesheet" href="styles/main.css?v=20" />
+    <link rel="stylesheet" href="styles/main.css?v=21" />
   </head>
   <body>
     <main class="app">
@@ -32,6 +32,19 @@
         <div class="interval-replay-wrap">
           <button id="replayIntervalBtn" class="tiny-btn replay-btn" type="button">↻ Еще раз</button>
         </div>
+      </div>
+
+      <div id="rhythmSection" class="trainer-section hidden">
+        <div class="rhythm-toolbar">
+          <label class="rhythm-bpm" for="rhythmBpmInput">
+            <span>BPM</span>
+            <input id="rhythmBpmInput" type="number" min="40" max="220" step="1" value="92" />
+          </label>
+          <button id="rhythmStartBtn" class="tiny-btn" type="button">Старт</button>
+          <button id="rhythmRegenerateBtn" class="tiny-btn" type="button">Новый ритм</button>
+        </div>
+        <p id="rhythmHint" class="rhythm-hint">16 долей, случайные длительности в каждом квадрате.</p>
+        <div id="rhythmGrid" class="rhythm-grid" aria-label="Ритмическая сетка из 16 долей"></div>
       </div>
     </main>
 
@@ -77,6 +90,7 @@
             <div class="mode-inline">
               <button id="modeNotesBtn" class="mode-btn active" type="button">Ноты</button>
               <button id="modeIntervalsBtn" class="mode-btn" type="button">Интервалы</button>
+              <button id="modeRhythmBtn" class="mode-btn" type="button">Ритм</button>
             </div>
           </div>
         </div>
@@ -85,6 +99,6 @@
 
     <div id="floatingFeedback" class="floating-feedback hidden" aria-live="polite"></div>
 
-    <script type="module" src="js/main.js?v=20"></script>
+    <script type="module" src="js/main.js?v=21"></script>
   </body>
 </html>
