@@ -80,42 +80,38 @@ export class PianoAudio {
 
     const ctx = this.nativeAudioCtx;
     const now = ctx.currentTime;
-    const duration = accent ? 0.068 : 0.052;
-    const gainPeak = accent ? 0.18 : 0.12;
+    const duration = accent ? 0.04 : 0.032;
+    const peak = accent ? 0.22 : 0.16;
 
-    const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * duration));
-    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const channel = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i += 1) {
-      const t = i / bufferSize;
-      const decay = 1 - t;
-      channel[i] = (Math.random() * 2 - 1) * decay;
-    }
-
-    const noise = ctx.createBufferSource();
-    noise.buffer = noiseBuffer;
-
-    const bandpass = ctx.createBiquadFilter();
-    bandpass.type = "bandpass";
-    bandpass.frequency.setValueAtTime(accent ? 1800 : 1550, now);
-    bandpass.Q.setValueAtTime(0.75, now);
-
+    const clickOsc = ctx.createOscillator();
+    const bodyOsc = ctx.createOscillator();
     const highpass = ctx.createBiquadFilter();
-    highpass.type = "highpass";
-    highpass.frequency.setValueAtTime(1000, now);
-
     const gain = ctx.createGain();
+
+    clickOsc.type = "triangle";
+    clickOsc.frequency.setValueAtTime(accent ? 2600 : 2100, now);
+    clickOsc.frequency.exponentialRampToValueAtTime(accent ? 1450 : 1200, now + duration);
+
+    bodyOsc.type = "sine";
+    bodyOsc.frequency.setValueAtTime(accent ? 840 : 700, now);
+    bodyOsc.frequency.exponentialRampToValueAtTime(accent ? 520 : 460, now + duration);
+
+    highpass.type = "highpass";
+    highpass.frequency.setValueAtTime(580, now);
+
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(gainPeak, now + 0.003);
+    gain.gain.exponentialRampToValueAtTime(peak, now + 0.0015);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
-    noise.connect(bandpass);
-    bandpass.connect(highpass);
+    clickOsc.connect(highpass);
+    bodyOsc.connect(highpass);
     highpass.connect(gain);
     gain.connect(ctx.destination);
 
-    noise.start(now);
-    noise.stop(now + duration + 0.01);
+    clickOsc.start(now);
+    bodyOsc.start(now);
+    clickOsc.stop(now + duration + 0.01);
+    bodyOsc.stop(now + duration + 0.01);
   }
 
   async #init() {

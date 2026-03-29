@@ -57,8 +57,8 @@
   min-height: 170px;
   display: grid;
   place-items: center;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: #fff;
+  border: 1px solid #d9d9d9;
   border-radius: 10px;
   position: relative;
   padding: 0.2rem 0.35rem 2.9rem;
@@ -147,8 +147,10 @@
 .rhythm-grid {
   margin-top: 0.55rem;
   display: grid;
-  grid-template-columns: repeat(4, minmax(140px, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(8, minmax(66px, 1fr));
+  gap: 0.38rem;
+  max-width: 940px;
+  margin-inline: auto;
 }
 
 .keyboard-wrap {
@@ -176,8 +178,8 @@
   }
 
   .rhythm-grid {
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
-    gap: 0.46rem;
+    grid-template-columns: repeat(4, minmax(58px, 1fr));
+    gap: 0.34rem;
   }
 
   .keyboard {

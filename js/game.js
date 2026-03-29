@@ -1,8 +1,8 @@
 import { KEYBOARD_START_MIDI, KEYBOARD_END_MIDI } from "./constants.js?v=24";
 import { buildPracticePoolByAccidentals, midiToName, pickRandomMidi } from "./music.js?v=24";
-import { renderNoteSvg } from "./staffRenderer.js?v=24";
+import { renderNoteSvg } from "./staffRenderer.js?v=25";
 import { createKeyboard } from "./keyboard.js?v=24";
-import { PianoAudio } from "./audio.js?v=24";
+import { PianoAudio } from "./audio.js?v=25";
 
 const THEME_STORAGE_KEY = "bass_clef_theme";
 const OCTAVE_LABELS_STORAGE_KEY = "bass_clef_octave_labels";

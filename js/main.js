@@ -1,4 +1,4 @@
-import { BassClefTrainer } from "./game.js?v=24";
+import { BassClefTrainer } from "./game.js?v=25";
 
 const settingsDockEl = document.getElementById("settingsDock");
 const settingsGearBtnEl = document.getElementById("settingsGearBtn");

@@ -37,24 +37,24 @@ export function renderNoteSvg(targetMidi, clef = "bass") {
 
   const linesSvg = Array.from({ length: 5 }, (_, i) => {
     const ly = topLineY + i * lineGap;
-    return `<line x1="${staffX1}" y1="${ly}" x2="${staffX2}" y2="${ly}" stroke="var(--ink)" stroke-width="1.5" />`;
+    return `<line x1="${staffX1}" y1="${ly}" x2="${staffX2}" y2="${ly}" stroke="#111" stroke-width="1.5" />`;
   }).join("\n");
 
   const ledgerSvg = ledger
     .map(
       (ly) =>
-        `<line x1="${noteX - 22}" y1="${ly}" x2="${noteX + 22}" y2="${ly}" stroke="var(--ink)" stroke-width="1.4" />`
+        `<line x1="${noteX - 22}" y1="${ly}" x2="${noteX + 22}" y2="${ly}" stroke="#111" stroke-width="1.4" />`
     )
     .join("\n");
 
   return `
   <svg width="100%" viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <rect x="0" y="0" width="560" height="200" fill="var(--panel)" />
+    <rect x="0" y="0" width="560" height="200" fill="#fff" />
     ${linesSvg}
     ${ledgerSvg}
-    <text x="100" y="${clefY}" font-size="88" font-family="'Times New Roman', serif" fill="var(--ink)" dominant-baseline="middle">${clefGlyph}</text>
-    ${accidentalGlyph ? `<text x="248" y="${y + 9}" font-size="32" font-family="'Times New Roman', serif" fill="var(--ink)">${accidentalGlyph}</text>` : ""}
-    <ellipse cx="${noteX}" cy="${y}" rx="14" ry="9.4" fill="var(--ink)" transform="rotate(-17 ${noteX} ${y})" />
+    <text x="100" y="${clefY}" font-size="88" font-family="'Times New Roman', serif" fill="#111" dominant-baseline="middle">${clefGlyph}</text>
+    ${accidentalGlyph ? `<text x="248" y="${y + 9}" font-size="32" font-family="'Times New Roman', serif" fill="#111">${accidentalGlyph}</text>` : ""}
+    <ellipse cx="${noteX}" cy="${y}" rx="14" ry="9.4" fill="#111" transform="rotate(-17 ${noteX} ${y})" />
   </svg>`;
 }
 
