@@ -377,6 +377,15 @@
 }
 
 .rhythm-pattern-option input {
+  appearance: auto;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  position: static;
+  box-shadow: none;
+  transform: none;
   margin: 0;
 }
 

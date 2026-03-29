@@ -1,8 +1,8 @@
-import { KEYBOARD_START_MIDI, KEYBOARD_END_MIDI } from "./constants.js";
-import { buildPracticePoolByAccidentals, midiToName, pickRandomMidi } from "./music.js";
-import { renderNoteSvg } from "./staffRenderer.js";
-import { createKeyboard } from "./keyboard.js";
-import { PianoAudio } from "./audio.js";
+import { KEYBOARD_START_MIDI, KEYBOARD_END_MIDI } from "./constants.js?v=24";
+import { buildPracticePoolByAccidentals, midiToName, pickRandomMidi } from "./music.js?v=24";
+import { renderNoteSvg } from "./staffRenderer.js?v=24";
+import { createKeyboard } from "./keyboard.js?v=24";
+import { PianoAudio } from "./audio.js?v=24";
 
 const THEME_STORAGE_KEY = "bass_clef_theme";
 const OCTAVE_LABELS_STORAGE_KEY = "bass_clef_octave_labels";
@@ -327,6 +327,7 @@ export class BassClefTrainer {
     this.modeNotesBtnEl.classList.toggle("active", notesMode);
     this.modeIntervalsBtnEl.classList.toggle("active", intervalMode);
     this.modeRhythmBtnEl.classList.toggle("active", rhythmMode);
+    this.updateClefButtons();
 
     if (notesMode) {
       if (this.state.note.targetMidi == null) {
@@ -898,14 +899,16 @@ export class BassClefTrainer {
   }
 
   drawTargetNote() {
-    this.noteViewEl.innerHTML = renderBassNoteSvg(this.state.note.targetMidi);
-    this.noteViewEl.setAttribute("aria-label", "На нотном стане показана нота в басовом ключе");
+    this.noteViewEl.innerHTML = renderNoteSvg(this.state.note.targetMidi, this.state.note.clef);
+    const clefLabel = this.state.note.clef === "treble" ? "скрипичном" : "басовом";
+    this.noteViewEl.setAttribute("aria-label", `На нотном стане показана нота в ${clefLabel} ключе`);
   }
 
   pickNextNote() {
     this.clearKeyMarks();
     const previous = this.state.note.targetMidi;
-    this.state.note.targetMidi = pickRandomMidi(this.practicePool, previous);
+    const currentPool = this.practicePools[this.state.note.clef] || [];
+    this.state.note.targetMidi = pickRandomMidi(currentPool, previous);
     if (this.state.note.targetMidi == null) return;
     this.drawTargetNote();
   }
@@ -1026,6 +1029,20 @@ export class BassClefTrainer {
       this.pendingRoundTimer = null;
     }, 760);
   }
+}
+
+function buildTreblePracticePool(includeAccidentals) {
+  const result = [];
+  for (let midi = TREBLE_PRACTICE_MIN_MIDI; midi <= TREBLE_PRACTICE_MAX_MIDI; midi += 1) {
+    if (!includeAccidentals && isAccidentalMidi(midi)) continue;
+    result.push(midi);
+  }
+  return result;
+}
+
+function isAccidentalMidi(midi) {
+  const semitone = midi % 12;
+  return [1, 3, 6, 8, 10].includes(semitone);
 }
 
 function randomInt(min, max) {
