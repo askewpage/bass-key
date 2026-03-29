@@ -331,6 +331,28 @@
   box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.35);
 }
 
+.rhythm-pattern-option {
+  border: 1px solid var(--button-border);
+  border-radius: 10px;
+  background: var(--button-bg);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.48rem;
+  user-select: none;
+}
+
+.rhythm-pattern-option input {
+  margin: 0;
+}
+
+.rhythm-pattern-option span {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 .rhythm-cell {
   border: 1px solid var(--button-border);
   border-radius: 12px;
@@ -342,15 +364,11 @@
   transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
-.rhythm-cell-index {
-  font-size: 0.74rem;
-  color: var(--muted);
-}
-
 .rhythm-cell-body {
-  font-size: 1rem;
+  font-size: 1.85rem;
   font-weight: 600;
   color: var(--ink);
+  line-height: 1;
 }
 
 .rhythm-cell-hits {
@@ -375,9 +393,11 @@
 }
 
 .rhythm-cell.is-active {
-  border-color: rgba(52, 199, 89, 0.6);
-  box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.26);
-  transform: translateY(-1px);
+  border-color: rgba(52, 199, 89, 0.86);
+  box-shadow:
+    0 0 0 3px rgba(52, 199, 89, 0.34),
+    0 10px 20px rgba(52, 199, 89, 0.16);
+  transform: translateY(-2px) scale(1.01);
 }
 
 .rhythm-cell.is-good {
@@ -459,7 +479,7 @@
   }
 
   .rhythm-cell-body {
-    font-size: 0.94rem;
+    font-size: 1.5rem;
   }
 
   .rhythm-hit-dot {

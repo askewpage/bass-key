@@ -69,6 +69,43 @@ export class PianoAudio {
     await this.playMidi(upperMidi);
   }
 
+  async playMetronomeTick(options = {}) {
+    const accent = Boolean(options.accent);
+    this.#ensureNativeContext();
+    if (!this.nativeAudioCtx) return;
+
+    if (this.nativeAudioCtx.state === "suspended") {
+      await this.nativeAudioCtx.resume();
+    }
+
+    const ctx = this.nativeAudioCtx;
+    const now = ctx.currentTime;
+    const freq = accent ? 1880 : 1320;
+    const gainPeak = accent ? 0.23 : 0.16;
+    const duration = accent ? 0.055 : 0.045;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = "square";
+    osc.frequency.setValueAtTime(freq, now);
+
+    filter.type = "highpass";
+    filter.frequency.setValueAtTime(900, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(gainPeak, now + 0.002);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + duration + 0.01);
+  }
+
   async #init() {
     const Tone = await import(TONE_CDN_URL);
     this.tone = Tone;

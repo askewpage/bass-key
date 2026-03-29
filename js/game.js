@@ -34,10 +34,10 @@ const RHYTHM_START_LEAD_IN_MS = 500;
 const RHYTHM_HIT_TOLERANCE_MS = 130;
 
 const RHYTHM_PATTERNS = [
-  { id: "quarter", label: "1/4", offsets: [0] },
-  { id: "eighths", label: "1/8+1/8", offsets: [0, 0.5] },
-  { id: "triplet", label: "триоль", offsets: [0, 1 / 3, 2 / 3] },
-  { id: "sixteenths", label: "1/16x4", offsets: [0, 0.25, 0.5, 0.75] },
+  { id: "quarter", label: "Четверть", icon: "♩", offsets: [0] },
+  { id: "eighths", label: "Восьмые", icon: "♫", offsets: [0, 0.5] },
+  { id: "triplet", label: "Триоль", icon: "♪3", offsets: [0, 1 / 3, 2 / 3] },
+  { id: "sixteenths", label: "Шестнадцатые", icon: "♬", offsets: [0, 0.25, 0.5, 0.75] },
 ];
 
 export class BassClefTrainer {
@@ -71,6 +71,7 @@ export class BassClefTrainer {
     this.rhythmStartBtnEl = elements.rhythmStartBtnEl || null;
     this.rhythmRegenerateBtnEl = elements.rhythmRegenerateBtnEl || null;
     this.rhythmBpmInputEl = elements.rhythmBpmInputEl || null;
+    this.rhythmPatternToggleEls = Array.from(elements.rhythmPatternToggleEls || []);
     this.rhythmHintEl = elements.rhythmHintEl || null;
 
     this.practicePool = [];
@@ -107,6 +108,7 @@ export class BassClefTrainer {
         attempts: 0,
         correct: 0,
         bpm: RHYTHM_DEFAULT_BPM,
+        enabledPatternIds: ["quarter", "eighths", "sixteenths"],
         sequence: [],
         expectedHits: [],
         running: false,
@@ -235,6 +237,18 @@ export class BassClefTrainer {
       });
     }
 
+    if (this.rhythmPatternToggleEls.length) {
+      const selectedIds = new Set(this.state.rhythm.enabledPatternIds);
+      this.rhythmPatternToggleEls.forEach((toggleEl) => {
+        const patternId = toggleEl.dataset.patternId;
+        if (!patternId) return;
+        toggleEl.checked = selectedIds.has(patternId);
+        toggleEl.addEventListener("change", () => {
+          this.handleRhythmPatternToggle(toggleEl, patternId);
+        });
+      });
+    }
+
     if (this.rhythmSectionEl) {
       this.rhythmSectionEl.addEventListener("pointerdown", (event) => {
         if (!(event.target instanceof HTMLElement)) return;
@@ -243,6 +257,28 @@ export class BassClefTrainer {
         this.handleRhythmInput();
       });
     }
+  }
+
+  handleRhythmPatternToggle(toggleEl, patternId) {
+    const selected = new Set(this.state.rhythm.enabledPatternIds);
+    if (toggleEl.checked) {
+      selected.add(patternId);
+    } else {
+      selected.delete(patternId);
+      if (selected.size === 0) {
+        selected.add(patternId);
+        toggleEl.checked = true;
+      }
+    }
+
+    this.state.rhythm.enabledPatternIds = Array.from(selected);
+    this.generateRhythmRound();
+  }
+
+  getEnabledRhythmPatterns() {
+    const selectedIds = new Set(this.state.rhythm.enabledPatternIds);
+    const enabled = RHYTHM_PATTERNS.filter((pattern) => selectedIds.has(pattern.id));
+    return enabled.length ? enabled : [RHYTHM_PATTERNS[0]];
   }
 
   setMode(mode) {
@@ -332,18 +368,13 @@ export class BassClefTrainer {
       const cell = document.createElement("div");
       cell.className = "rhythm-cell";
 
-      const indexEl = document.createElement("div");
-      indexEl.className = "rhythm-cell-index";
-      indexEl.textContent = String(beat + 1);
-
       const bodyEl = document.createElement("div");
       bodyEl.className = "rhythm-cell-body";
-      bodyEl.textContent = "1/4";
+      bodyEl.textContent = "♩";
 
       const hitsEl = document.createElement("div");
       hitsEl.className = "rhythm-cell-hits";
 
-      cell.appendChild(indexEl);
       cell.appendChild(bodyEl);
       cell.appendChild(hitsEl);
       this.rhythmGridEl.appendChild(cell);
@@ -363,7 +394,8 @@ export class BassClefTrainer {
       if (!cell) return;
 
       cell.root.classList.remove("is-active", "is-good", "is-bad");
-      cell.bodyEl.textContent = pattern.label;
+      cell.bodyEl.textContent = pattern.icon;
+      cell.bodyEl.setAttribute("title", pattern.label);
       cell.hitsEl.innerHTML = "";
       cell.dots = [];
 
@@ -378,12 +410,13 @@ export class BassClefTrainer {
 
   generateRhythmRound() {
     this.stopRhythmRound();
+    const enabledPatterns = this.getEnabledRhythmPatterns();
 
     const sequence = [];
     let previous = null;
 
     for (let beat = 0; beat < RHYTHM_TOTAL_BEATS; beat += 1) {
-      const pattern = pickRandomRhythmPattern(previous);
+      const pattern = pickRandomRhythmPattern(enabledPatterns, previous);
       sequence.push(pattern);
       previous = pattern.id;
     }
@@ -436,6 +469,10 @@ export class BassClefTrainer {
     this.rhythmCells.forEach((cell) => {
       cell.root.classList.remove("is-active", "is-good", "is-bad", "is-off");
     });
+
+    if (this.rhythmStartBtnEl) {
+      this.rhythmStartBtnEl.textContent = "Идет...";
+    }
 
     this.updateRhythmHint("Раунд запущен. Жми Space или кликай в такт.");
     this.updateStats();
@@ -616,8 +653,7 @@ export class BassClefTrainer {
   }
 
   playRhythmPulse(beatIndex) {
-    const pulseMidi = beatIndex % 4 === 0 ? 65 : 53;
-    this.pianoAudio.playMidi(pulseMidi);
+    this.pianoAudio.playMetronomeTick({ accent: beatIndex % 4 === 0 });
   }
 
   getBeatDurationMs() {
@@ -632,7 +668,10 @@ export class BassClefTrainer {
       return;
     }
 
-    this.rhythmHintEl.textContent = `BPM: ${this.state.rhythm.bpm}. 16 долей, случайные длительности в каждом квадрате.`;
+    const enabled = this.getEnabledRhythmPatterns()
+      .map((pattern) => pattern.icon)
+      .join(" ");
+    this.rhythmHintEl.textContent = `BPM: ${this.state.rhythm.bpm}. Длительности: ${enabled}.`;
   }
 
   applyKeyboardLabelVisibility() {
@@ -922,14 +961,14 @@ function pickRandomInterval(previousSemitones = null) {
   return candidate;
 }
 
-function pickRandomRhythmPattern(previousPatternId = null) {
-  if (RHYTHM_PATTERNS.length === 1) {
-    return RHYTHM_PATTERNS[0];
+function pickRandomRhythmPattern(patterns, previousPatternId = null) {
+  if (patterns.length === 1) {
+    return patterns[0];
   }
 
-  let candidate = RHYTHM_PATTERNS[Math.floor(Math.random() * RHYTHM_PATTERNS.length)];
+  let candidate = patterns[Math.floor(Math.random() * patterns.length)];
   while (candidate.id === previousPatternId) {
-    candidate = RHYTHM_PATTERNS[Math.floor(Math.random() * RHYTHM_PATTERNS.length)];
+    candidate = patterns[Math.floor(Math.random() * patterns.length)];
   }
   return candidate;
 }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Тренажер басового ключа</title>
-    <link rel="stylesheet" href="styles/main.css?v=21" />
+    <link rel="stylesheet" href="styles/main.css?v=22" />
   </head>
   <body>
     <main class="app">
@@ -42,6 +42,24 @@
           </label>
           <button id="rhythmStartBtn" class="tiny-btn" type="button">Старт</button>
           <button id="rhythmRegenerateBtn" class="tiny-btn" type="button">Новый ритм</button>
+        </div>
+        <div class="rhythm-patterns" aria-label="Выбор длительностей для раунда">
+          <label class="rhythm-pattern-option" for="rhythmQuarterToggle">
+            <input id="rhythmQuarterToggle" data-pattern-id="quarter" type="checkbox" checked />
+            <span>♩</span>
+          </label>
+          <label class="rhythm-pattern-option" for="rhythmEighthsToggle">
+            <input id="rhythmEighthsToggle" data-pattern-id="eighths" type="checkbox" checked />
+            <span>♫</span>
+          </label>
+          <label class="rhythm-pattern-option" for="rhythmSixteenthsToggle">
+            <input id="rhythmSixteenthsToggle" data-pattern-id="sixteenths" type="checkbox" checked />
+            <span>♬</span>
+          </label>
+          <label class="rhythm-pattern-option" for="rhythmTripletToggle">
+            <input id="rhythmTripletToggle" data-pattern-id="triplet" type="checkbox" />
+            <span>♪3</span>
+          </label>
         </div>
         <p id="rhythmHint" class="rhythm-hint">16 долей, случайные длительности в каждом квадрате.</p>
         <div id="rhythmGrid" class="rhythm-grid" aria-label="Ритмическая сетка из 16 долей"></div>
@@ -99,6 +117,6 @@
 
     <div id="floatingFeedback" class="floating-feedback hidden" aria-live="polite"></div>
 
-    <script type="module" src="js/main.js?v=21"></script>
+    <script type="module" src="js/main.js?v=22"></script>
   </body>
 </html>

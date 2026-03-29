@@ -58,6 +58,7 @@ const trainer = new BassClefTrainer({
   rhythmStartBtnEl: document.getElementById("rhythmStartBtn"),
   rhythmRegenerateBtnEl: document.getElementById("rhythmRegenerateBtn"),
   rhythmBpmInputEl: document.getElementById("rhythmBpmInput"),
+  rhythmPatternToggleEls: document.querySelectorAll("[data-pattern-id]"),
   rhythmHintEl: document.getElementById("rhythmHint"),
   showLabelsToggleEl: document.getElementById("showLabelsToggle"),
   accidentalsToggleEl: document.getElementById("accidentalsToggle"),

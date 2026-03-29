@@ -124,6 +124,14 @@
   color: var(--muted);
 }
 
+.rhythm-patterns {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
 .rhythm-grid {
   margin-top: 0.55rem;
   display: grid;
