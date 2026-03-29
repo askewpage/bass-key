@@ -1,8 +1,8 @@
-import { KEYBOARD_START_MIDI, KEYBOARD_END_MIDI } from "./constants.js?v=24";
-import { buildPracticePoolByAccidentals, midiToName, pickRandomMidi } from "./music.js?v=24";
-import { renderNoteSvg } from "./staffRenderer.js?v=25";
-import { createKeyboard } from "./keyboard.js?v=24";
-import { PianoAudio } from "./audio.js?v=25";
+import { KEYBOARD_START_MIDI, KEYBOARD_END_MIDI } from "./constants.js?v=26";
+import { buildPracticePoolByAccidentals, midiToName, pickRandomMidi } from "./music.js?v=26";
+import { renderNoteSvg } from "./staffRenderer.js?v=26";
+import { createKeyboard } from "./keyboard.js?v=26";
+import { PianoAudio } from "./audio.js?v=26";
 
 const THEME_STORAGE_KEY = "bass_clef_theme";
 const OCTAVE_LABELS_STORAGE_KEY = "bass_clef_octave_labels";
@@ -35,10 +35,13 @@ const RHYTHM_START_LEAD_IN_MS = 500;
 const RHYTHM_HIT_TOLERANCE_MS = 130;
 
 const RHYTHM_PATTERNS = [
-  { id: "quarter", label: "Четверть", icon: "♩", offsets: [0] },
-  { id: "eighths", label: "Восьмые", icon: "♫", offsets: [0, 0.5] },
-  { id: "triplet", label: "Триоль", icon: "♪3", offsets: [0, 1 / 3, 2 / 3] },
-  { id: "sixteenths", label: "Шестнадцатые", icon: "♬", offsets: [0, 0.25, 0.5, 0.75] },
+  { id: "quarter", label: "Четверть", icon: "♩", spanBeats: 1, offsets: [0] },
+  { id: "eighths", label: "Восьмые", icon: "♫", spanBeats: 1, offsets: [0, 0.5] },
+  { id: "sixteenths", label: "Шестнадцатые", icon: "♬", spanBeats: 1, offsets: [0, 0.25, 0.5, 0.75] },
+  { id: "triplet", label: "Триоль", icon: "♪3", spanBeats: 1, offsets: [0, 1 / 3, 2 / 3] },
+  { id: "rest", label: "Пауза", icon: "𝄽", spanBeats: 1, offsets: [] },
+  { id: "half", label: "Половинная", icon: "𝅗𝅥", spanBeats: 2, offsets: [0] },
+  { id: "whole", label: "Целая", icon: "𝅝", spanBeats: 2, offsets: [0] },
 ];
 
 const TREBLE_PRACTICE_MIN_MIDI = 55; // G3
@@ -121,7 +124,7 @@ export class BassClefTrainer {
         attempts: 0,
         correct: 0,
         bpm: RHYTHM_DEFAULT_BPM,
-        enabledPatternIds: ["quarter", "eighths", "sixteenths"],
+        enabledPatternIds: ["quarter", "eighths", "rest", "half", "whole"],
         sequence: [],
         expectedHits: [],
         running: false,
@@ -389,14 +392,25 @@ export class BassClefTrainer {
 
     this.rhythmGridEl.innerHTML = "";
     this.rhythmCells = [];
+  }
 
-    for (let beat = 0; beat < RHYTHM_TOTAL_BEATS; beat += 1) {
+  renderRhythmGrid() {
+    if (!this.rhythmGridEl) return;
+    this.rhythmGridEl.innerHTML = "";
+    this.rhythmCells = [];
+
+    this.state.rhythm.sequence.forEach((pattern) => {
       const cell = document.createElement("div");
       cell.className = "rhythm-cell";
+      if (pattern.id === "rest") {
+        cell.classList.add("is-rest");
+      }
+      cell.style.gridColumn = `span ${pattern.spanBeats}`;
 
       const bodyEl = document.createElement("div");
       bodyEl.className = "rhythm-cell-body";
-      bodyEl.textContent = "♩";
+      bodyEl.textContent = pattern.icon;
+      bodyEl.setAttribute("title", pattern.label);
 
       const hitsEl = document.createElement("div");
       hitsEl.className = "rhythm-cell-hits";
@@ -405,32 +419,23 @@ export class BassClefTrainer {
       cell.appendChild(hitsEl);
       this.rhythmGridEl.appendChild(cell);
 
-      this.rhythmCells.push({
+      const item = {
         root: cell,
         bodyEl,
         hitsEl,
         dots: [],
-      });
-    }
-  }
-
-  renderRhythmGrid() {
-    this.state.rhythm.sequence.forEach((pattern, beatIndex) => {
-      const cell = this.rhythmCells[beatIndex];
-      if (!cell) return;
-
-      cell.root.classList.remove("is-active", "is-good", "is-bad");
-      cell.bodyEl.textContent = pattern.icon;
-      cell.bodyEl.setAttribute("title", pattern.label);
-      cell.hitsEl.innerHTML = "";
-      cell.dots = [];
+        startBeat: pattern.startBeat,
+        spanBeats: pattern.spanBeats,
+      };
 
       pattern.offsets.forEach(() => {
         const dot = document.createElement("span");
         dot.className = "rhythm-hit-dot";
-        cell.hitsEl.appendChild(dot);
-        cell.dots.push(dot);
+        hitsEl.appendChild(dot);
+        item.dots.push(dot);
       });
+
+      this.rhythmCells.push(item);
     });
   }
 
@@ -440,19 +445,29 @@ export class BassClefTrainer {
 
     const sequence = [];
     let previous = null;
-
-    for (let beat = 0; beat < RHYTHM_TOTAL_BEATS; beat += 1) {
-      const pattern = pickRandomRhythmPattern(enabledPatterns, previous);
-      sequence.push(pattern);
+    let cursorBeat = 0;
+    while (cursorBeat < RHYTHM_TOTAL_BEATS) {
+      const remaining = RHYTHM_TOTAL_BEATS - cursorBeat;
+      let candidates = enabledPatterns.filter((pattern) => pattern.spanBeats <= remaining);
+      if (!candidates.length) {
+        candidates = RHYTHM_PATTERNS.filter((pattern) => pattern.spanBeats === 1);
+      }
+      const pattern = pickRandomRhythmPattern(candidates, previous);
+      sequence.push({
+        ...pattern,
+        startBeat: cursorBeat,
+      });
+      cursorBeat += pattern.spanBeats;
       previous = pattern.id;
     }
 
     this.state.rhythm.sequence = sequence;
-    this.state.rhythm.expectedHits = sequence.flatMap((pattern, beatIndex) =>
+    this.state.rhythm.expectedHits = sequence.flatMap((pattern, patternIndex) =>
       pattern.offsets.map((offset, hitIndex) => ({
-        beatIndex,
+        patternIndex,
         hitIndex,
         offset,
+        beatIndex: pattern.startBeat + offset,
         time: 0,
         matched: false,
         missed: false,
@@ -482,11 +497,11 @@ export class BassClefTrainer {
     this.state.rhythm.running = true;
 
     this.state.rhythm.expectedHits.forEach((hit) => {
-      hit.time = startTime + (hit.beatIndex + hit.offset) * beatMs;
+      hit.time = startTime + hit.beatIndex * beatMs;
       hit.matched = false;
       hit.missed = false;
 
-      const dot = this.getRhythmDot(hit.beatIndex, hit.hitIndex);
+      const dot = this.getRhythmDot(hit.patternIndex, hit.hitIndex);
       if (dot) {
         dot.classList.remove("is-hit", "is-miss");
       }
@@ -536,11 +551,10 @@ export class BassClefTrainer {
         const previousBeat = this.state.rhythm.currentBeat;
         this.state.rhythm.currentBeat = beatIndex;
 
-        if (beatIndex >= 0 && beatIndex < RHYTHM_TOTAL_BEATS) {
-          this.rhythmCells.forEach((cell, index) => {
-            cell.root.classList.toggle("is-active", index === beatIndex);
-          });
-        }
+        const activePatternIndex = this.getActivePatternIndex(beatIndex);
+        this.rhythmCells.forEach((cell, index) => {
+          cell.root.classList.toggle("is-active", index === activePatternIndex);
+        });
 
         for (let pulse = previousBeat + 1; pulse <= beatIndex; pulse += 1) {
           if (pulse >= 0 && pulse < RHYTHM_TOTAL_BEATS) {
@@ -594,7 +608,8 @@ export class BassClefTrainer {
     if (!nearest) {
       const activeBeat = this.state.rhythm.currentBeat;
       if (activeBeat >= 0 && activeBeat < RHYTHM_TOTAL_BEATS) {
-        const cell = this.rhythmCells[activeBeat];
+        const activePatternIndex = this.getActivePatternIndex(activeBeat);
+        const cell = this.rhythmCells[activePatternIndex];
         if (cell) {
           cell.root.classList.add("is-off");
           window.setTimeout(() => {
@@ -610,12 +625,12 @@ export class BassClefTrainer {
     nearest.matched = true;
     this.state.rhythm.correct += 1;
 
-    const dot = this.getRhythmDot(nearest.beatIndex, nearest.hitIndex);
+    const dot = this.getRhythmDot(nearest.patternIndex, nearest.hitIndex);
     if (dot) {
       dot.classList.add("is-hit");
     }
 
-    this.refreshRhythmCellResult(nearest.beatIndex);
+    this.refreshRhythmCellResult(nearest.patternIndex);
     this.updateStats();
   }
 
@@ -644,12 +659,12 @@ export class BassClefTrainer {
       hit.missed = true;
       this.state.rhythm.attempts += 1;
 
-      const dot = this.getRhythmDot(hit.beatIndex, hit.hitIndex);
+      const dot = this.getRhythmDot(hit.patternIndex, hit.hitIndex);
       if (dot) {
         dot.classList.add("is-miss");
       }
 
-      this.refreshRhythmCellResult(hit.beatIndex);
+      this.refreshRhythmCellResult(hit.patternIndex);
     });
 
     if (this.state.mode === "rhythm") {
@@ -657,8 +672,8 @@ export class BassClefTrainer {
     }
   }
 
-  refreshRhythmCellResult(beatIndex) {
-    const cell = this.rhythmCells[beatIndex];
+  refreshRhythmCellResult(patternIndex) {
+    const cell = this.rhythmCells[patternIndex];
     if (!cell) return;
 
     const total = cell.dots.length;
@@ -672,10 +687,17 @@ export class BassClefTrainer {
     cell.root.classList.add(missCount === 0 ? "is-good" : "is-bad");
   }
 
-  getRhythmDot(beatIndex, hitIndex) {
-    const cell = this.rhythmCells[beatIndex];
+  getRhythmDot(patternIndex, hitIndex) {
+    const cell = this.rhythmCells[patternIndex];
     if (!cell) return null;
     return cell.dots[hitIndex] || null;
+  }
+
+  getActivePatternIndex(beatIndex) {
+    if (beatIndex < 0) return -1;
+    return this.state.rhythm.sequence.findIndex(
+      (pattern) => beatIndex >= pattern.startBeat && beatIndex < pattern.startBeat + pattern.spanBeats
+    );
   }
 
   playRhythmPulse(beatIndex) {

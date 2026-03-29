@@ -147,9 +147,9 @@
 .rhythm-grid {
   margin-top: 0.55rem;
   display: grid;
-  grid-template-columns: repeat(8, minmax(66px, 1fr));
-  gap: 0.38rem;
-  max-width: 940px;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 0.24rem;
+  max-width: 760px;
   margin-inline: auto;
 }
 
@@ -178,8 +178,9 @@
   }
 
   .rhythm-grid {
-    grid-template-columns: repeat(4, minmax(58px, 1fr));
-    gap: 0.34rem;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0.2rem;
+    max-width: 100%;
   }
 
   .keyboard {
